@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from dataclasses import asdict
 
 from flask import Blueprint, Response, current_app, jsonify, render_template, request
 
@@ -10,6 +11,7 @@ from domain import parse_contact, validate_contact, validate_name, validate_requ
 
 LOGGER = logging.getLogger(__name__)
 bp = Blueprint("web_assistant", __name__)
+ALLOWED_SOURCES = {"telegram_bot", "website_assistant"}
 
 
 def _session_id() -> str:
@@ -29,6 +31,109 @@ def _step_prompt(step: str) -> str:
 @bp.get("/")
 def index() -> str:
     return render_template("index.html")
+
+
+def _authorize_leads_view() -> tuple[bool, Response | None]:
+    expected = str(current_app.config.get("leads_view_token", "")).strip()
+    provided = request.headers.get("X-Leads-View-Token", "").strip() or request.args.get("token", "").strip()
+
+    if not expected:
+        LOGGER.error("[web_assistant.routes] Leads view is not configured")
+        response = jsonify({"error": "leads_view_not_configured"})
+        response.status_code = 503
+        return False, response
+
+    if provided != expected:
+        LOGGER.warning(
+            "[web_assistant.routes] Unauthorized leads view access",
+            extra={"path": request.path, "remote": request.remote_addr or "unknown"},
+        )
+        response = jsonify({"error": "unauthorized"})
+        response.status_code = 401
+        return False, response
+
+    LOGGER.info("[web_assistant.routes] Leads view authorized", extra={"path": request.path})
+    return True, None
+
+
+def _parse_pagination() -> tuple[int, int, str | None, Response | None]:
+    raw_limit = request.args.get("limit", "20").strip()
+    raw_offset = request.args.get("offset", "0").strip()
+    raw_source = request.args.get("source", "").strip()
+
+    try:
+        limit = int(raw_limit)
+        offset = int(raw_offset)
+    except ValueError:
+        LOGGER.warning(
+            "[web_assistant.routes] Invalid pagination parameters",
+            extra={"limit": raw_limit, "offset": raw_offset},
+        )
+        response = jsonify({"error": "invalid_pagination"})
+        response.status_code = 400
+        return 0, 0, None, response
+
+    if limit < 1 or limit > 100 or offset < 0:
+        LOGGER.warning(
+            "[web_assistant.routes] Pagination out of range",
+            extra={"limit": limit, "offset": offset},
+        )
+        response = jsonify({"error": "invalid_pagination_range"})
+        response.status_code = 400
+        return 0, 0, None, response
+
+    source = raw_source or None
+    if source and source not in ALLOWED_SOURCES:
+        LOGGER.warning("[web_assistant.routes] Invalid source filter", extra={"source": source})
+        response = jsonify({"error": "invalid_source"})
+        response.status_code = 400
+        return 0, 0, None, response
+
+    LOGGER.debug(
+        "[web_assistant.routes] Leads pagination parsed",
+        extra={"limit": limit, "offset": offset, "source": source or "all"},
+    )
+    return limit, offset, source, None
+
+
+@bp.get("/leads")
+def leads_page() -> str | Response:
+    authorized, error_response = _authorize_leads_view()
+    if not authorized:
+        return error_response
+    return render_template("leads.html", leads_view_token=current_app.config.get("leads_view_token", ""))
+
+
+@bp.get("/api/leads")
+def api_leads() -> Response:
+    authorized, error_response = _authorize_leads_view()
+    if not authorized:
+        return error_response
+
+    limit, offset, source, parse_error = _parse_pagination()
+    if parse_error is not None:
+        return parse_error
+
+    lead_repo = current_app.config["lead_repo"]
+    try:
+        items, total = lead_repo.list_leads(limit=limit, offset=offset, source=source)
+        LOGGER.info(
+            "[web_assistant.routes] Leads loaded",
+            extra={"limit": limit, "offset": offset, "source": source or "all", "count": len(items), "total": total},
+        )
+        return jsonify(
+            {
+                "items": [asdict(item) for item in items],
+                "pagination": {"limit": limit, "offset": offset, "total": total},
+                "source": source or "all",
+            }
+        )
+    except Exception as error:  # noqa: BLE001
+        LOGGER.error(
+            "[web_assistant.routes] Failed to read leads",
+            extra={"limit": limit, "offset": offset, "source": source or "all", "error": str(error)},
+        )
+        return jsonify({"error": "leads_read_failed"}), 500
 
 
 @bp.get("/health")

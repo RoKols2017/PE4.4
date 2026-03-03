@@ -30,6 +30,7 @@ def create_app() -> Flask:
             "app_port": settings.app_port,
             "storage_backend": "postgres",
             "openai_model": settings.openai_model,
+            "leads_view_enabled": bool(settings.leads_view_token),
         },
     )
 
@@ -47,6 +48,7 @@ def create_app() -> Flask:
     app.config["assistant_ai"] = AssistantAI(settings.openai_api_key, settings.openai_model)
     app.config["session_store"] = SessionStore()
     app.config["lead_repo"] = lead_repo
+    app.config["leads_view_token"] = settings.leads_view_token
 
     app.register_blueprint(bp)
 

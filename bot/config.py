@@ -49,12 +49,12 @@ def load_settings() -> Settings:
 def _str_env(name: str, default: str) -> str:
     raw = os.getenv(name)
     if raw is None:
-        LOGGER.warning("[bot.config] Using default env value", extra={"name": name, "default": default})
+        LOGGER.warning("[bot.config] Using default env value", extra={"env_var": name, "default": default})
         return default
 
     cleaned = raw.strip()
     if not cleaned:
-        LOGGER.warning("[bot.config] Using default for empty env value", extra={"name": name, "default": default})
+        LOGGER.warning("[bot.config] Using default for empty env value", extra={"env_var": name, "default": default})
         return default
     return cleaned
 
@@ -62,7 +62,7 @@ def _str_env(name: str, default: str) -> str:
 def _int_env(name: str, default: int, minimum: int = 0) -> int:
     raw_input = os.getenv(name)
     if raw_input is None:
-        LOGGER.warning("[bot.config] Using default env value", extra={"name": name, "default": default})
+        LOGGER.warning("[bot.config] Using default env value", extra={"env_var": name, "default": default})
         raw = str(default)
     else:
         raw = raw_input.strip()
@@ -80,7 +80,7 @@ def _int_env(name: str, default: int, minimum: int = 0) -> int:
 def _float_env(name: str, default: float, minimum: float = 0.0) -> float:
     raw_input = os.getenv(name)
     if raw_input is None:
-        LOGGER.warning("[bot.config] Using default env value", extra={"name": name, "default": default})
+        LOGGER.warning("[bot.config] Using default env value", extra={"env_var": name, "default": default})
         raw = str(default)
     else:
         raw = raw_input.strip()

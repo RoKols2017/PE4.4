@@ -18,11 +18,26 @@ class LeadDraft:
     request: str = ""
 
 
+@dataclass(frozen=True)
+class LeadListItem:
+    lead_id: str
+    source: str
+    name: str
+    phone: str
+    email: str
+    request: str
+    status: str
+    created_at_utc: str
+
+
 class LeadRepository(Protocol):
     def ensure_schema(self) -> None:
         ...
 
     def save_website_lead(self, lead_id: str, draft: LeadDraft, session_id: str) -> None:
+        ...
+
+    def list_leads(self, limit: int, offset: int, source: str | None = None) -> tuple[list[LeadListItem], int]:
         ...
 
 

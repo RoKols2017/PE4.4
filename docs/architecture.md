@@ -8,6 +8,7 @@ The target system has two application services and one edge component:
 
 - `telegram-bot`: collects leads from Telegram chat flows
 - `web-assistant`: collects leads from website conversations
+- `web-assistant`: collects leads from website conversations and serves protected leads viewer UI
 - `nginx`: public HTTPS entry point for web traffic
 
 ## Boundary Rules
@@ -38,6 +39,7 @@ Website assistant collects `phone` or `email` and stores both as first-class col
 ## Data and Observability
 
 - Primary storage: PostgreSQL with tables `leads` and `lead_events`.
+- Read path: web-assistant provides `/api/leads` + `/leads` (token-protected) for operations visibility.
 - Logs: all services write to stdout for container aggregation.
 - Correlation: include `lead_id` and/or `session_id` in logs where possible.
 

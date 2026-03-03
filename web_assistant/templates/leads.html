@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Просмотр лидов</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  </head>
+  <body>
+    <main class="leads-page" data-leads-token="{{ leads_view_token }}">
+      <header class="leads-header">
+        <h1>Лиды из PostgreSQL</h1>
+        <p>Просмотр последних заявок из каналов Telegram и Website assistant.</p>
+      </header>
+
+      <section class="leads-controls">
+        <label>
+          Источник
+          <select id="source-filter">
+            <option value="">Все</option>
+            <option value="website_assistant">Website</option>
+            <option value="telegram_bot">Telegram</option>
+          </select>
+        </label>
+        <button id="refresh-btn" type="button">Обновить</button>
+      </section>
+
+      <p id="leads-error" class="leads-error hidden"></p>
+
+      <div class="leads-table-wrap">
+        <table class="leads-table">
+          <thead>
+            <tr>
+              <th>Дата (UTC)</th>
+              <th>Источник</th>
+              <th>Имя</th>
+              <th>Телефон</th>
+              <th>Email</th>
+              <th>Запрос</th>
+              <th>Статус</th>
+            </tr>
+          </thead>
+          <tbody id="leads-body"></tbody>
+        </table>
+      </div>
+
+      <div id="leads-empty" class="leads-empty hidden">Пока нет сохраненных лидов.</div>
+
+      <footer class="leads-pagination">
+        <button id="prev-btn" type="button">Назад</button>
+        <span id="page-label">Страница 1</span>
+        <button id="next-btn" type="button">Вперед</button>
+      </footer>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/leads.js') }}"></script>
+  </body>
+</html>

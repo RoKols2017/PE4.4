@@ -26,6 +26,7 @@
 | `RETRY_DELAY_SECONDS` | No | Delay between write retries |
 | `WEB_ASSISTANT_HOST` | No | Flask bind host (`0.0.0.0`) |
 | `WEB_ASSISTANT_PORT` | No | Flask bind port (`5000`) |
+| `LEADS_VIEW_TOKEN` | Yes (web UI) | Access token for `/leads` and `/api/leads` |
 | `NGINX_SERVER_NAME` | Yes (prod) | Public HTTPS host name |
 | `MAX_REQUEST_SIZE` | No | Request size guard for web ingress |
 
@@ -35,6 +36,7 @@
 - Prefer secret stores or CI/CD secret injection in production.
 - Use local `.env` only for development, never for production deployment history.
 - Website and Telegram services share one PostgreSQL database schema (`leads`, `lead_events`).
+- Leads viewer endpoints (`/leads`, `/api/leads`) require `LEADS_VIEW_TOKEN`.
 
 ## Local Configuration Workflow
 

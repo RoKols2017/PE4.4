@@ -19,6 +19,7 @@ docker compose --profile test run --rm web-assistant-test
 
 - **Python Telegram bot** (`telebot`) with in-memory step-by-step lead flow
 - **Flask website assistant** with one-page landing and embedded chat widget
+- **Protected leads viewer page** at `/leads` for PostgreSQL records
 - **AI assistant replies** via OpenAI API with non-fabrication constraints
 - **Shared PostgreSQL persistence** for both sources in `leads` + `lead_events`
 - **Docker-first deployment** with nginx as reverse proxy for web traffic
@@ -36,6 +37,8 @@ Assistant: Спасибо! Заявка отправлена. Номер: <lead_
 ```
 
 Expected result: validated lead is saved to PostgreSQL with `source=website_assistant`.
+
+Leads UI access: open `/leads?token=<LEADS_VIEW_TOKEN>`.
 
 ---
 

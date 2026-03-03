@@ -29,12 +29,13 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 |  `- tests/                   # Unit tests for bot modules
 |- web_assistant/
 |  |- app.py                   # Flask entrypoint
-|  |- routes.py                # Chat and landing HTTP routes
+|  |- routes.py                # Chat, landing, and leads-view HTTP routes
 |  |- ai_logic.py              # OpenAI assistant policy wrapper
 |  |- postgres_repository.py   # PostgreSQL lead persistence adapter
 |  |- domain.py                # Website lead validation contract
 |  |- session.py               # In-memory chat sessions
 |  |- templates/index.html     # Landing page with widget shell
+|  |- templates/leads.html     # Token-protected leads viewer page
 |  |- static/                  # Widget JS/CSS assets
 |  |- requirements.txt         # Flask service dependencies
 |  `- tests/                   # Tests for web assistant flow
@@ -65,7 +66,7 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 | `bot/bot.py` | Telegram polling bot runtime |
 | `bot/postgres_repository.py` | Telegram lead PostgreSQL adapter |
 | `web_assistant/app.py` | Flask web assistant runtime |
-| `web_assistant/routes.py` | Website assistant API and landing routes |
+| `web_assistant/routes.py` | Website assistant API, landing, and leads routes |
 | `web_assistant/postgres_repository.py` | Website lead PostgreSQL adapter |
 | `README.md` | Entry point for setup and docs navigation |
 | `.ai-factory.json` | AI Factory metadata (skills and MCP status) |

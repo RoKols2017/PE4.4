@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 import psycopg
 
-from domain import LeadDraft, normalize_email, normalize_phone
+from domain import LeadDraft, LeadListItem, normalize_email, normalize_phone
 
 
 LOGGER = logging.getLogger(__name__)
@@ -172,3 +172,65 @@ class PostgresLeadRepository:
                     extra={"lead_id": lead_id, "attempt": attempt, "session_id": session_id, "error": str(error)},
                 )
                 time.sleep(self.retry_delay_seconds)
+
+    def list_leads(self, limit: int, offset: int, source: str | None = None) -> tuple[list[LeadListItem], int]:
+        LOGGER.debug(
+            "[web_assistant.postgres.list_leads] Reading leads",
+            extra={"limit": limit, "offset": offset, "source": source or "all"},
+        )
+        try:
+            with psycopg.connect(self.database_url, connect_timeout=self.connect_timeout_seconds) as conn:
+                with conn.cursor() as cursor:
+                    if source:
+                        cursor.execute("SELECT COUNT(*) FROM leads WHERE source = %s", (source,))
+                    else:
+                        cursor.execute("SELECT COUNT(*) FROM leads")
+                    total = int(cursor.fetchone()[0])
+
+                    if source:
+                        cursor.execute(
+                            """
+                            SELECT lead_id, source, name, phone, email, request, status, created_at_utc
+                            FROM leads
+                            WHERE source = %s
+                            ORDER BY created_at_utc DESC
+                            LIMIT %s OFFSET %s
+                            """,
+                            (source, limit, offset),
+                        )
+                    else:
+                        cursor.execute(
+                            """
+                            SELECT lead_id, source, name, phone, email, request, status, created_at_utc
+                            FROM leads
+                            ORDER BY created_at_utc DESC
+                            LIMIT %s OFFSET %s
+                            """,
+                            (limit, offset),
+                        )
+                    rows = cursor.fetchall()
+
+            items = [
+                LeadListItem(
+                    lead_id=str(row[0]),
+                    source=row[1],
+                    name=row[2],
+                    phone=row[3],
+                    email=row[4],
+                    request=row[5],
+                    status=row[6],
+                    created_at_utc=row[7].isoformat() if hasattr(row[7], "isoformat") else str(row[7]),
+                )
+                for row in rows
+            ]
+            LOGGER.info(
+                "[web_assistant.postgres.list_leads] Leads loaded",
+                extra={"count": len(items), "total": total, "source": source or "all"},
+            )
+            return items, total
+        except Exception as error:  # noqa: BLE001
+            LOGGER.error(
+                "[web_assistant.postgres.list_leads] Failed to load leads",
+                extra={"limit": limit, "offset": offset, "source": source or "all", "error": str(error)},
+            )
+            raise
