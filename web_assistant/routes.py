@@ -31,6 +31,11 @@ def index() -> str:
     return render_template("index.html")
 
 
+@bp.get("/health")
+def health() -> Response:
+    return jsonify({"status": "ok"})
+
+
 @bp.post("/api/chat/start")
 def chat_start() -> Response:
     session_id = _session_id()

@@ -1,0 +1,72 @@
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "20m"
+    max-file: "5"
+
+x-security: &default-security
+  read_only: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
+services:
+  telegram-bot:
+    build: null
+    image: ${TELEGRAM_BOT_IMAGE:?TELEGRAM_BOT_IMAGE must be set}
+    <<: *default-security
+    user: "1001:1001"
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+          pids: 100
+        reservations:
+          cpus: "0.10"
+          memory: 64M
+    logging: *default-logging
+    restart: unless-stopped
+
+  web-assistant:
+    build: null
+    image: ${WEB_ASSISTANT_IMAGE:?WEB_ASSISTANT_IMAGE must be set}
+    <<: *default-security
+    user: "1001:1001"
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512M
+          pids: 150
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    logging: *default-logging
+    restart: unless-stopped
+
+  nginx:
+    <<: *default-security
+    user: "101:101"
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+      - /var/cache/nginx:noexec,nosuid,size=50m
+      - /var/run:noexec,nosuid,size=10m
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:8080"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+          pids: 100
+        reservations:
+          cpus: "0.10"
+          memory: 64M
+    logging: *default-logging
+    restart: unless-stopped

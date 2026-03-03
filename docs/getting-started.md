@@ -11,20 +11,21 @@ This workspace contains AI Factory context, a Python Telegram bot, and a Flask w
 | Tool | Why it is needed |
 |------|------------------|
 | Python 3.12 | Run telegram-bot service and tests |
-| Docker + Docker Compose | Planned runtime for bot, web, and nginx |
+| Docker + Docker Compose | Runtime for bot, web, and nginx |
 | Telegram bot token | Required when implementing bot integration |
 | Google service account | Required for Google Sheets storage |
 | OpenAI API key | Required for website assistant AI responses |
 
 ## First Session Flow
 
-1. Copy env templates: `cp bot/.env.example bot/.env` and `cp web_assistant/.env.example web_assistant/.env`.
-2. Fill `TELEGRAM_BOT_TOKEN`, `OPENAI_API_KEY`, `GOOGLE_SHEETS_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`.
-3. Build dockerized test images: `docker compose --profile test build telegram-bot-test web-assistant-test`.
-4. Run tests in Docker:
-   - `docker compose --profile test run --rm telegram-bot-test`
-   - `docker compose --profile test run --rm web-assistant-test`
-5. Start full stack: `docker compose up --build`.
+1. Copy root env template: `cp .env.example .env`.
+2. Fill `TELEGRAM_BOT_TOKEN`, `OPENAI_API_KEY`, `GOOGLE_SHEETS_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON` in `.env`.
+3. Validate compose config: `docker compose --env-file .env -f compose.yml -f compose.override.yml config`.
+4. Build and run full dev stack: `docker compose --env-file .env -f compose.yml -f compose.override.yml up --build -d`.
+5. Run tests in Docker:
+   - `docker compose --env-file .env -f compose.yml -f compose.override.yml --profile test run --rm telegram-bot-test`
+   - `docker compose --env-file .env -f compose.yml -f compose.override.yml --profile test run --rm web-assistant-test`
+6. Open edge endpoint: `http://localhost:8080`.
 
 ## Quick Verification
 
@@ -34,8 +35,7 @@ Use this checklist before implementation starts:
 - `.ai-factory/DESCRIPTION.md` reflects current business scope
 - `.ai-factory/ARCHITECTURE.md` captures deployment decisions
 - Required skills are present in `.ai-factory.json`
-- `bot/.env` contains valid secrets
-- `web_assistant/.env` contains valid secrets
+- `.env` contains valid secrets
 
 ## Next Step
 

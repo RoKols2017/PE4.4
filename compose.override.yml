@@ -1,0 +1,31 @@
+services:
+  telegram-bot:
+    build:
+      target: development
+    volumes:
+      - ./bot:/app
+    command: ["python", "bot.py"]
+
+  web-assistant:
+    build:
+      target: development
+    volumes:
+      - ./web_assistant:/app
+    command: ["flask", "--app", "app:create_app", "run", "--debug", "--host", "0.0.0.0", "--port", "5000"]
+    environment:
+      FLASK_APP: app:create_app
+      PYTHONPATH: /app
+    ports:
+      - "5000:5000"
+
+  nginx:
+    ports:
+      - "8080:8080"
+
+  telegram-bot-test:
+    build:
+      target: development
+
+  web-assistant-test:
+    build:
+      target: development
