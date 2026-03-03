@@ -6,7 +6,7 @@ Product
 Tech stack
 - Telegram bot: Python 3.12, pyTelegramBotAPI, OpenAI API.
 - Website assistant: Python 3.12, Flask, OpenAI API.
-- Интеграция с БД: PostgreSQL (psycopg), DDL + миграции в `db/migrations`.
+- Интеграция с БД: PostgreSQL (psycopg), bootstrap DDL в `db/schema.sql`.
 
 Functional
 - Общая доменная модель Lead: `name`, контакт, `request`, `source`, метаданные.

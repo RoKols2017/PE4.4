@@ -14,7 +14,6 @@ x-security: &default-security
 services:
   postgres:
     image: postgres:16-alpine
-    user: "999:999"
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
     deploy:
