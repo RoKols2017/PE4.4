@@ -30,6 +30,14 @@ Both channels use a shared `Lead` model:
 
 Validation rule: at least one contact must be provided (`telegram_username` or `phone`).
 
+### Website Contact Compatibility
+
+Website assistant collects `phone` or `email`. Shared sheet schema is kept compatible with Telegram flow:
+
+- website `phone` is written to column `I` (`phone`)
+- website `email` is written to column `H` (`telegram_username`) as `email:<value>`
+- `source` is always `website_assistant` for web channel rows
+
 ## Data and Observability
 
 - Primary storage: Google Sheets with a single shared column schema.

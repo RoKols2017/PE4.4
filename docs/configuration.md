@@ -24,7 +24,6 @@
 | `RETRY_DELAY_SECONDS` | No | Delay between write retries |
 | `WEB_ASSISTANT_HOST` | No | Flask bind host (`0.0.0.0`) |
 | `WEB_ASSISTANT_PORT` | No | Flask bind port (`5000`) |
-| `WEB_PORT` | No | Internal web service port (example: `8000`) |
 | `NGINX_SERVER_NAME` | Yes (prod) | Public HTTPS host name |
 | `MAX_REQUEST_SIZE` | No | Request size guard for web ingress |
 

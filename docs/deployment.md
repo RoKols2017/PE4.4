@@ -10,6 +10,11 @@ Expected container set:
 - `web-assistant` (Flask internal HTTP app)
 - `telegram-bot` (outbound integration worker)
 
+Current internal routing:
+
+- `nginx` -> `web-assistant:5000`
+- `web-assistant` runs Flask via `python app.py` in Docker
+
 Optional component:
 
 - `certbot` or external certificate manager
@@ -34,6 +39,7 @@ Optional component:
 | TLS certificates configured | Required |
 | `NGINX_SERVER_NAME` configured | Required |
 | Bot token available in runtime env | Required |
+| OpenAI API key available for web assistant | Required |
 | Google Sheets credentials injected securely | Required |
 | Logs visible from all containers | Required |
 
