@@ -7,7 +7,7 @@
 Expected container set:
 
 - `nginx` (public edge, HTTPS termination)
-- `web-assistant` (internal HTTP app)
+- `web-assistant` (Flask internal HTTP app)
 - `telegram-bot` (outbound integration worker)
 
 Optional component:
@@ -41,7 +41,8 @@ Optional component:
 
 - `telegram-bot` can run in polling mode to avoid inbound webhook exposure.
 - Keep restart policy enabled for bot and web services.
-- Add health checks when service code appears in the repository.
+- Both services write leads into a shared Google Sheets table `Leads`.
+- Add health checks for Flask and bot containers as next hardening step.
 
 ## See Also
 

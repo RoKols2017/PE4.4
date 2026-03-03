@@ -4,11 +4,11 @@
 
 ## Project Overview
 This repository currently stores AI Factory project context and agent skills for a lead-capture product with two services: a Telegram bot and a website assistant.
-The repository now includes a Python Telegram bot implementation in `bot/`; website assistant remains infrastructure-level placeholder.
+The repository includes a Python Telegram bot in `bot/` and a Flask website assistant with landing widget in `web_assistant/`.
 
 ## Tech Stack
-- **Language:** Python 3.12 (telegram bot), TypeScript (experimental service scaffold)
-- **Framework:** pyTelegramBotAPI (`telebot`) for Telegram bot runtime
+- **Language:** Python 3.12 (telegram bot + website assistant), TypeScript (experimental service scaffold)
+- **Framework:** pyTelegramBotAPI (`telebot`), Flask (website assistant)
 - **Database:** Google Sheets (from `.ai-factory/DESCRIPTION.md`)
 - **ORM:** Not applicable (based on current project description)
 
@@ -27,6 +27,17 @@ The repository now includes a Python Telegram bot implementation in `bot/`; webs
 |  |- session.py               # In-memory dialog sessions
 |  |- requirements.txt         # Python dependencies
 |  `- tests/                   # Unit tests for bot modules
+|- web_assistant/
+|  |- app.py                   # Flask entrypoint
+|  |- routes.py                # Chat and landing HTTP routes
+|  |- ai_logic.py              # OpenAI assistant policy wrapper
+|  |- sheets.py                # Shared Google Sheets write adapter
+|  |- domain.py                # Website lead validation contract
+|  |- session.py               # In-memory chat sessions
+|  |- templates/index.html     # Landing page with widget shell
+|  |- static/                  # Widget JS/CSS assets
+|  |- requirements.txt         # Flask service dependencies
+|  `- tests/                   # Tests for web assistant flow
 |- .ai-factory/
 |  |- DESCRIPTION.md           # Product and non-functional requirements
 |  |- ARCHITECTURE.md          # Architecture constraints and deployment options
@@ -50,6 +61,8 @@ The repository now includes a Python Telegram bot implementation in `bot/`; webs
 | `.ai-factory/ARCHITECTURE.md` | Architecture decisions and constraints |
 | `bot/bot.py` | Telegram polling bot runtime |
 | `bot/sheets.py` | Google Sheets persistence adapter |
+| `web_assistant/app.py` | Flask web assistant runtime |
+| `web_assistant/routes.py` | Website assistant API and landing routes |
 | `README.md` | Entry point for setup and docs navigation |
 | `.ai-factory.json` | AI Factory metadata (skills and MCP status) |
 | `.opencode/package.json` | OpenCode tooling dependencies |

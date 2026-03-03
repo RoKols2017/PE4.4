@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Сайт с ассистентом</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  </head>
+  <body>
+    <main class="landing">
+      <section class="hero">
+        <h1>Помогаем быстро оставить заявку</h1>
+        <p>
+          Напишите ассистенту в чате: он уточнит имя, контакт и запрос, затем сохранит заявку
+          для менеджера.
+        </p>
+      </section>
+    </main>
+
+    <button id="chat-toggle" class="chat-toggle" aria-label="Открыть чат">Чат</button>
+
+    <section id="chat-widget" class="chat-widget hidden" aria-live="polite">
+      <header class="chat-header">
+        <strong>Ассистент</strong>
+        <button id="chat-close" aria-label="Закрыть чат">×</button>
+      </header>
+
+      <div id="chat-messages" class="chat-messages"></div>
+
+      <div id="typing-indicator" class="typing hidden">Ассистент печатает...</div>
+
+      <form id="chat-form" class="chat-form">
+        <input id="chat-input" type="text" placeholder="Введите сообщение..." autocomplete="off" />
+        <button type="submit">Отправить</button>
+      </form>
+    </section>
+
+    <script src="{{ url_for('static', filename='js/widget.js') }}"></script>
+  </body>
+</html>

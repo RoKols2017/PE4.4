@@ -1,8 +1,8 @@
-# Implementation Plan: Python Telegram Bot Lead Capture
+# Implementation Plan: Landing + Website Assistant (Flask)
 
 Branch: feature/telegram-bot-lead-capture
 Created: 2026-03-02
-Intended path: .ai-factory/plans/feature-telegram-bot-lead-capture.md (blocked by directory permissions)
+Mode: fast plan (saved in root due `.ai-factory/` permission limits)
 
 ## Settings
 - Testing: yes
@@ -10,56 +10,60 @@ Intended path: .ai-factory/plans/feature-telegram-bot-lead-capture.md (blocked b
 - Docs: yes
 
 ## Planning Notes
-- Source request is used as input, but plan follows AIF priorities: clear boundaries, observable behavior, validation-first flow, and incremental delivery.
-- Main delivery target remains `bot/` with Python 3.12 + telebot + OpenAI + Google Sheets + dotenv.
-- Architecture is adapted: thin entrypoint + separated AI, Sheets, config, and domain/dialog logic.
+- AIF priorities: bounded scope, clear module boundaries, observability-first, and incremental delivery.
+- Role focus: fullstack + AI engineering for web intake assistant (lead collection, not sales automation).
+- Backend is fixed: Python 3.12 + Flask, minimal dependencies, deploy-ready.
+- Interaction path is fixed: landing widget (frontend) -> Flask API (backend) -> Google Sheets.
+- Assistant flow is fixed: `name -> contact (phone/email) -> request -> confirm`.
+- Website and Telegram bot use one shared spreadsheet; source split is done via `source` value.
+- No extra operational scripts (`run.sh`, `run.bat`, etc.); only required runtime files.
 
 ## Commit Plan
-- **Commit 1** (after tasks 1-3): `feat(bot): scaffold python service and config validation`
-- **Commit 2** (after tasks 4-6): `feat(bot): implement dialog flow and sheets persistence`
-- **Commit 3** (after tasks 7-8): `test(bot): add coverage and update run documentation`
+- **Commit 1** (after tasks 1-3): `feat(web): scaffold flask service and shared contract`
+- **Commit 2** (after tasks 4-6): `feat(web): implement dialog api, widget UX, and sheets writes`
+- **Commit 3** (after tasks 7-8): `test(web): add coverage and finalize deployment docs`
 
 ## Tasks
 
-### Phase 1: Foundation and Safety
-- [x] **Task 1: Create Python runtime skeleton and dependency baseline**  
-  Deliverable: bootstrap `bot/` package layout with executable entrypoint and dependency lock baseline for Python 3.12.  
-  Files: `bot/bot.py`, `bot/requirements.txt`, `bot/__init__.py` (optional), `.gitignore` updates if needed.  
-  Logging requirements: startup banner at `INFO`, runtime/env checks at `DEBUG`, dependency/init failures at `ERROR`.
+### Phase 1: Foundations and Shared Contract
+- [x] **Task 1: Scaffold Flask app with minimal deploy-ready structure**  
+  Deliverable: create readable Flask project layout with strict module boundaries (`app`, `config`, `routes`, `ai_logic`, `sheets`, `session`, `domain`) and minimal dependency set.  
+  Files: `web_assistant/app.py`, `web_assistant/config.py`, `web_assistant/routes.py`, `web_assistant/requirements.txt`, `web_assistant/__init__.py`.  
+  Logging requirements: startup/service metadata at `INFO`, config/env validation trace at `DEBUG`, invalid bootstrap state at `ERROR`.
 
-- [x] **Task 2: Implement configuration loading and strict env validation**  
-  Deliverable: central config loader for Telegram/OpenAI/Sheets credentials, defaults for non-sensitive vars, and fail-fast validation.  
-  Files: `bot/config.py`, `bot/.env.example` (safe template only).  
-  Logging requirements: config validation steps at `DEBUG`, safe config snapshot at `INFO` (never secrets), missing/invalid vars at `ERROR`.
+- [x] **Task 2: Define shared sheet contract for website email support (without breaking bot)**  
+  Deliverable: formalize how website `email` is persisted in the shared Telegram+website sheet; include compatible schema strategy and row-mapping rules for `source=website_assistant`.  
+  Files: `web_assistant/domain.py`, `web_assistant/sheets_schema.py` (or constants in `sheets.py`), plan note updates in `README.md`/`docs/configuration.md` for shared-sheet contract.  
+  Logging requirements: mapping/contract checks at `DEBUG`, accepted normalized payload summary at `INFO`, incompatible schema or mapping conflicts at `WARN/ERROR`.
 
-- [x] **Task 3: Define lead domain model and validation rules**  
-  Deliverable: domain object and validators for `name`, `contact` (phone or telegram username), `request`, `source=telegram_bot`, including normalization and error codes.  
-  Files: `bot/domain.py` (or `bot/lead.py`), integration points in `bot/bot.py`.  
-  Logging requirements: validation entry/exit at `DEBUG`, accepted payload summary at `INFO`, validation rejects with reason codes at `WARN`.
+- [x] **Task 3: Build one-page landing and widget shell with fixed UX constraints**  
+  Deliverable: landing page with always-available bottom-right chat widget, dark neutral style, autoscroll, and visible "assistant typing" state placeholder.  
+  Files: `web_assistant/templates/index.html`, `web_assistant/static/css/styles.css`, `web_assistant/static/js/widget.js`.  
+  Logging requirements: client interaction events (`open`, `send`, `scroll`, `typing_state`) at `DEBUG` (safe payloads only), rendering failures at `WARN`.
 
-### Phase 2: Integrations and Dialog Flow
-- [x] **Task 4: Implement Google Sheets adapter with retries and correlation id** (depends on 2, 3)  
-  Deliverable: ensure `Leads` sheet exists and matches `.ai-factory/DATA_MODEL.md` columns (`A:R`); if missing, create sheet and write header row once; then append validated leads with retry policy, timeout handling, and generated `lead_id`.  
-  Files: `bot/sheets.py`, minor wiring in `bot/config.py`.  
-  Logging requirements: sheet/schema check results at `INFO`, header/bootstrap actions at `WARN` (one-time infra event), API call boundaries at `DEBUG`, successful append with `lead_id` at `INFO`, retry attempts at `WARN`, final failure context at `ERROR`.
+### Phase 2: Assistant Runtime and Persistence
+- [x] **Task 4: Implement AI policy layer for polite bounded assistance** (depends on 1, 2)  
+  Deliverable: LLM wrapper with policy prompt that keeps friendly-business tone, asks clarifying questions, avoids fabrication, and returns user to scenario when off-script.  
+  Files: `web_assistant/ai_logic.py`.  
+  Logging requirements: prompt stage metadata at `DEBUG` (no raw secrets/PII dumps), successful model call at `INFO`, model timeout/failure at `ERROR`, fallback activation at `WARN`.
 
-- [x] **Task 5: Implement AI response module with bounded prompt strategy** (depends on 2, 3)  
-  Deliverable: OpenAI client wrapper that generates assistant replies per current step, prevents fabrication, and supports graceful fallback if model call fails.  
-  Files: `bot/ai_logic.py`.  
-  Logging requirements: prompt stage metadata at `DEBUG` (no sensitive raw dumps), model success at `INFO`, OpenAI failures/timeouts at `ERROR`, fallback activation at `WARN`.
+- [x] **Task 5: Implement Flask dialog/session API for lead collection** (depends on 1, 3, 4)  
+  Deliverable: API endpoints for step transitions and confirmation flow with session correlation, input validation responses, and typing-indicator state support for UI.  
+  Files: `web_assistant/routes.py`, `web_assistant/session.py`, optional request/response schema helpers.  
+  Logging requirements: request correlation id and step transitions at `DEBUG/INFO`, off-script/user recovery events at `WARN`, unhandled API exceptions at `ERROR`.
 
-- [x] **Task 6: Build Telegram step-by-step state machine and submit workflow** (depends on 3, 4, 5)  
-  Deliverable: in-memory session manager for steps `name -> contact -> request -> confirm`, off-script recovery, and final submit to Sheets.  
-  Files: `bot/bot.py`, optional `bot/session.py`, optional `bot/dialog.py`.  
-  Logging requirements: per-message processing at `DEBUG`, step transitions at `INFO`, off-script/user recovery events at `WARN`, unhandled exceptions at `ERROR`.
+- [x] **Task 6: Implement shared Google Sheets adapter + infra wiring for website assistant** (depends on 2, 5)  
+  Deliverable: append website leads to the same sheet used by Telegram bot with schema/bootstrap checks, retry policy, and `lead_id`; wire `docker-compose` and nginx route to Flask web assistant service.  
+  Files: `web_assistant/sheets.py`, `docker-compose.yml`, `infra/nginx/default.conf`, `web_assistant/config.py`.  
+  Logging requirements: schema/bootstrap events at `INFO/WARN`, outbound Sheets API calls at `DEBUG`, successful write with `lead_id` at `INFO`, retries at `WARN`, hard failures at `ERROR`.
 
-### Phase 3: Quality, Verification, and Documentation
-- [x] **Task 7: Add automated tests for domain, dialog transitions, and integrations boundaries** (depends on 3, 4, 6)  
-  Deliverable: unit tests for validators/session flow and integration-boundary tests with mocked OpenAI and Sheets clients.  
-  Files: `bot/tests/test_domain.py`, `bot/tests/test_dialog.py`, `bot/tests/test_sheets.py` (or equivalent).  
-  Logging requirements: tests support debug logging toggle, failed path assertions include structured context, error-path logs validated where practical.
+### Phase 3: Quality and Operability
+- [x] **Task 7: Add tests for contract, flow, and persistence boundaries** (depends on 2, 5, 6)  
+  Deliverable: automated tests for domain validation (`phone/email`), dialog transitions, AI fallback behavior, shared-sheet mapping correctness, and mocked Sheets persistence failures.  
+  Files: `web_assistant/tests/test_domain.py`, `web_assistant/tests/test_dialog.py`, `web_assistant/tests/test_sheets.py`, optional API tests (`test_routes.py`).  
+  Logging requirements: test mode supports verbose logs, failure-path assertions include structured error context.
 
-- [x] **Task 8: Update runtime documentation and project map for bot delivery** (depends on 1-7)  
-  Deliverable: concise run/setup docs and env matrix aligned with implemented bot behavior; keep only README as user-facing doc for `bot/` scope while syncing repo-level pointers.  
-  Files: `README.md`, `AGENTS.md`, optionally `docs/getting-started.md` and `docs/configuration.md` if repo-level references changed.  
-  Logging requirements: document expected log milestones (`startup`, `step_progress`, `lead_saved`, `integration_error`) and sample troubleshooting cues.
+- [x] **Task 8: Update docs and project map for landing + website assistant rollout** (depends on 1-7)  
+  Deliverable: update runtime docs for Flask service, shared-sheet contract, env matrix, docker/nginx startup, and troubleshooting signals; sync project map with new directories/entrypoints.  
+  Files: `README.md`, `AGENTS.md`, `docs/getting-started.md`, `docs/configuration.md`, `docs/deployment.md`.  
+  Logging requirements: document operational markers (`assistant_step`, `typing_state`, `lead_saved`, `sheets_retry`, `assistant_fallback`, `api_error`).

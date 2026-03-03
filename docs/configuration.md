@@ -22,6 +22,8 @@
 | `LOCAL_TIMEZONE` | No | Local timezone for `created_at_local` |
 | `MAX_RETRY_ATTEMPTS` | No | Retry count for Google Sheets writes |
 | `RETRY_DELAY_SECONDS` | No | Delay between write retries |
+| `WEB_ASSISTANT_HOST` | No | Flask bind host (`0.0.0.0`) |
+| `WEB_ASSISTANT_PORT` | No | Flask bind port (`5000`) |
 | `WEB_PORT` | No | Internal web service port (example: `8000`) |
 | `NGINX_SERVER_NAME` | Yes (prod) | Public HTTPS host name |
 | `MAX_REQUEST_SIZE` | No | Request size guard for web ingress |
@@ -31,6 +33,8 @@
 - Do not commit service account JSON files.
 - Prefer secret stores or CI/CD secret injection in production.
 - Use local `.env` only for development, never for production deployment history.
+- Website and Telegram services share one Google sheet (`GOOGLE_SHEET_NAME=Leads`).
+- Website email values are written to shared column H as `email:<value>` for schema compatibility.
 
 ## Local Configuration Workflow
 

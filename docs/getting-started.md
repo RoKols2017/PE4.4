@@ -4,8 +4,7 @@
 
 ## What Is In This Repository
 
-This workspace contains AI Factory context and a working Python Telegram bot implementation.
-The web-assistant service is still a placeholder container.
+This workspace contains AI Factory context, a Python Telegram bot, and a Flask website assistant.
 
 ## Prerequisites
 
@@ -15,15 +14,17 @@ The web-assistant service is still a placeholder container.
 | Docker + Docker Compose | Planned runtime for bot, web, and nginx |
 | Telegram bot token | Required when implementing bot integration |
 | Google service account | Required for Google Sheets storage |
+| OpenAI API key | Required for website assistant AI responses |
 
 ## First Session Flow
 
-1. Copy env template: `cp bot/.env.example bot/.env`.
-2. Fill `TELEGRAM_BOT_TOKEN`, `GOOGLE_SHEETS_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`.
-3. Install dependencies: `cd bot && python3 -m pip install -r requirements.txt`.
-4. Run locally: `python3 bot.py`.
-5. Optionally run tests: `python3 -m pytest tests`.
-6. For container run, align compose service with `bot/` runtime.
+1. Copy env templates: `cp bot/.env.example bot/.env` and `cp web_assistant/.env.example web_assistant/.env`.
+2. Fill `TELEGRAM_BOT_TOKEN`, `OPENAI_API_KEY`, `GOOGLE_SHEETS_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`.
+3. Build dockerized test images: `docker compose --profile test build telegram-bot-test web-assistant-test`.
+4. Run tests in Docker:
+   - `docker compose --profile test run --rm telegram-bot-test`
+   - `docker compose --profile test run --rm web-assistant-test`
+5. Start full stack: `docker compose up --build`.
 
 ## Quick Verification
 
@@ -34,6 +35,7 @@ Use this checklist before implementation starts:
 - `.ai-factory/ARCHITECTURE.md` captures deployment decisions
 - Required skills are present in `.ai-factory.json`
 - `bot/.env` contains valid secrets
+- `web_assistant/.env` contains valid secrets
 
 ## Next Step
 

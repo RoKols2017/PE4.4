@@ -3,36 +3,39 @@
 > AI Factory context for a two-channel lead capture product (Telegram bot + website assistant).
 
 This repository stores planning context, architecture constraints, reusable AI skills,
-and a Python Telegram bot implementation under `bot/`.
+and implementations for both channels:
+- Telegram bot in `bot/`
+- Website assistant (Flask + landing widget) in `web_assistant/`
 
 ## Quick Start
 
 ```bash
-cd bot
-python3 -m pip install -r requirements.txt
-python3 bot.py
+docker compose --profile test build telegram-bot-test web-assistant-test
+docker compose --profile test run --rm telegram-bot-test
+docker compose --profile test run --rm web-assistant-test
 ```
 
 ## Key Features
 
 - **Python Telegram bot** (`telebot`) with in-memory step-by-step lead flow
+- **Flask website assistant** with one-page landing and embedded chat widget
 - **AI assistant replies** via OpenAI API with non-fabrication constraints
-- **Google Sheets persistence** aligned to `.ai-factory/DATA_MODEL.md` (`Leads!A:R`)
+- **Shared Google Sheets persistence** for both sources in `Leads!A:R`
 - **Docker-first deployment** with nginx as reverse proxy for web traffic
 - **Security baseline** for secrets, TLS headers, and request-size limits
 
 ## Example
 
 ```text
-User: /start
-Bot: Как вас зовут?
+User opens landing chat widget
+Assistant: Как вас зовут?
 User: Иван
-Bot: Укажите контакт...
+Assistant: Укажите контакт (телефон или email)...
 ...
-Bot: Спасибо! Ваша заявка принята. Номер: <lead_id>
+Assistant: Спасибо! Заявка отправлена. Номер: <lead_id>
 ```
 
-Expected result: validated lead is saved to Google Sheets with `source=telegram_bot`.
+Expected result: validated lead is saved to shared Google Sheets with `source=website_assistant`.
 
 ---
 

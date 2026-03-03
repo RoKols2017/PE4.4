@@ -30,10 +30,34 @@ services:
       - lead-network
 
   web-assistant:
-    image: nginx:1.27-alpine
-    command: ["/bin/sh", "-c", "echo 'web-assistant placeholder' > /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"]
+    build:
+      context: ./web_assistant
+      dockerfile: Dockerfile
+    environment:
+      WEB_ASSISTANT_HOST: ${WEB_ASSISTANT_HOST:-0.0.0.0}
+      WEB_ASSISTANT_PORT: ${WEB_ASSISTANT_PORT:-5000}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      GOOGLE_SHEETS_ID: ${GOOGLE_SHEETS_ID:-}
+      GOOGLE_SHEET_NAME: ${GOOGLE_SHEET_NAME:-Leads}
+      GOOGLE_SERVICE_ACCOUNT_JSON: ${GOOGLE_SERVICE_ACCOUNT_JSON:-}
+      MAX_RETRY_ATTEMPTS: ${MAX_RETRY_ATTEMPTS:-3}
+      RETRY_DELAY_SECONDS: ${RETRY_DELAY_SECONDS:-1}
+      LOCAL_TIMEZONE: ${LOCAL_TIMEZONE:-UTC}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    command: ["python", "app.py"]
     expose:
-      - "8000"
+      - "5000"
+    restart: unless-stopped
+    networks:
+      - lead-network
+
+  web-assistant-test:
+    build:
+      context: ./web_assistant
+      dockerfile: Dockerfile
+    command: ["python", "-m", "pytest", "tests", "-q"]
+    profiles: ["test"]
     networks:
       - lead-network
 
