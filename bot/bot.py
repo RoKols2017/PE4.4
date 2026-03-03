@@ -6,15 +6,16 @@ import uuid
 import telebot
 
 from ai_logic import AssistantAI
-from config import load_service_account_info, load_settings
+from config import load_settings
 from domain import (
+    LeadRepository,
     parse_contact,
     validate_contact,
     validate_name,
     validate_request,
 )
+from postgres_repository import PostgresLeadRepository, build_lead_record
 from session import SessionStore
-from sheets import SheetsLeadRepository, build_lead_record
 
 
 LOGGER = logging.getLogger(__name__)
@@ -46,22 +47,20 @@ def main() -> None:
         "[bot.main] Runtime config",
         extra={
             "openai_model": settings.openai_model,
-            "google_sheet_name": settings.google_sheet_name,
+            "storage_backend": "postgres",
             "poll_interval_seconds": settings.poll_interval_seconds,
             "max_retry_attempts": settings.max_retry_attempts,
         },
     )
 
-    service_account_info = load_service_account_info(settings.google_service_account_json)
-    sheets = SheetsLeadRepository(
-        spreadsheet_id=settings.google_sheets_id,
-        service_account_info=service_account_info,
-        sheet_name=settings.google_sheet_name,
+    lead_repo: LeadRepository = PostgresLeadRepository(
+        database_url=settings.database_url,
         local_timezone=settings.local_timezone,
         max_retry_attempts=settings.max_retry_attempts,
         retry_delay_seconds=settings.retry_delay_seconds,
+        connect_timeout_seconds=settings.db_connect_timeout_seconds,
     )
-    sheets.ensure_schema()
+    lead_repo.ensure_schema()
 
     ai = AssistantAI(api_key=settings.openai_api_key, model=settings.openai_model)
     sessions = SessionStore()
@@ -181,7 +180,8 @@ def main() -> None:
 
             lead_id = str(uuid.uuid4())
             lead = build_lead_record(lead_id=lead_id, draft=session.draft, local_timezone=settings.local_timezone)
-            sheets.append_lead(lead)
+            LOGGER.debug("[bot.text_handler] Saving lead", extra={"chat_id": chat_id, "lead_id": lead_id})
+            lead_repo.save_lead(lead)
             LOGGER.info("[bot.text_handler] Lead saved", extra={"chat_id": chat_id, "lead_id": lead_id})
             sessions.reset(chat_id, source_user_id=user_id, source_username=source_username or "")
             bot.send_message(chat_id, f"Спасибо! Заявка отправлена. Номер: {lead_id}")

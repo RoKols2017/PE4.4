@@ -20,7 +20,7 @@ docker compose --profile test run --rm web-assistant-test
 - **Python Telegram bot** (`telebot`) with in-memory step-by-step lead flow
 - **Flask website assistant** with one-page landing and embedded chat widget
 - **AI assistant replies** via OpenAI API with non-fabrication constraints
-- **Shared Google Sheets persistence** for both sources in `Leads!A:R`
+- **Shared PostgreSQL persistence** for both sources in `leads` + `lead_events`
 - **Docker-first deployment** with nginx as reverse proxy for web traffic
 - **Security baseline** for secrets, TLS headers, and request-size limits
 
@@ -35,7 +35,7 @@ Assistant: Укажите контакт (телефон или email)...
 Assistant: Спасибо! Заявка отправлена. Номер: <lead_id>
 ```
 
-Expected result: validated lead is saved to shared Google Sheets with `source=website_assistant`.
+Expected result: validated lead is saved to PostgreSQL with `source=website_assistant`.
 
 ---
 

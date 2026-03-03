@@ -48,12 +48,13 @@ dc up -d --remove-orphans || error_exit "Failed to start services"
 
 MAX_WAIT=120
 WAIT=0
-SERVICES=(telegram-bot web-assistant nginx)
+SERVICES=(postgres telegram-bot web-assistant nginx)
 
 log_info "Waiting for service health"
 while [ ${WAIT} -lt ${MAX_WAIT} ]; do
   ALL_HEALTHY=true
   for svc in "${SERVICES[@]}"; do
+    log_info "Checking ${svc} readiness"
     health="$(dc ps --format '{{.Service}} {{.Health}}' | awk -v name="$svc" '$1==name {print $2}')"
     if [ -n "${health}" ] && [ "${health}" != "healthy" ]; then
       ALL_HEALTHY=false

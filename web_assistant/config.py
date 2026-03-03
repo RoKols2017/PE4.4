@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-import json
 import os
+import logging
 from dataclasses import dataclass
 
 from dotenv import load_dotenv
 
 
 load_dotenv()
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -17,9 +19,8 @@ class Settings:
     log_level: str
     openai_api_key: str
     openai_model: str
-    google_sheets_id: str
-    google_sheet_name: str
-    google_service_account_json: str
+    database_url: str
+    db_connect_timeout_seconds: int
     max_retry_attempts: int
     retry_delay_seconds: float
     local_timezone: str
@@ -33,7 +34,12 @@ def _required(name: str) -> str:
 
 
 def _int_env(name: str, default: int, minimum: int = 0) -> int:
-    raw = os.getenv(name, str(default)).strip()
+    raw_input = os.getenv(name)
+    if raw_input is None:
+        LOGGER.warning("[web_assistant.config] Using default env value", extra={"name": name, "default": default})
+        raw = str(default)
+    else:
+        raw = raw_input.strip()
     value = int(raw)
     if value < minimum:
         raise ValueError(f"{name} must be >= {minimum}, got {value}")
@@ -41,7 +47,12 @@ def _int_env(name: str, default: int, minimum: int = 0) -> int:
 
 
 def _float_env(name: str, default: float, minimum: float = 0.0) -> float:
-    raw = os.getenv(name, str(default)).strip()
+    raw_input = os.getenv(name)
+    if raw_input is None:
+        LOGGER.warning("[web_assistant.config] Using default env value", extra={"name": name, "default": default})
+        raw = str(default)
+    else:
+        raw = raw_input.strip()
     value = float(raw)
     if value < minimum:
         raise ValueError(f"{name} must be >= {minimum}, got {value}")
@@ -50,22 +61,26 @@ def _float_env(name: str, default: float, minimum: float = 0.0) -> float:
 
 def load_settings() -> Settings:
     return Settings(
-        app_host=os.getenv("WEB_ASSISTANT_HOST", "0.0.0.0").strip() or "0.0.0.0",
+        app_host=_str_env("WEB_ASSISTANT_HOST", "0.0.0.0"),
         app_port=_int_env("WEB_ASSISTANT_PORT", 5000, minimum=1),
-        log_level=os.getenv("LOG_LEVEL", "INFO").strip().upper() or "INFO",
+        log_level=_str_env("LOG_LEVEL", "INFO").upper(),
         openai_api_key=_required("OPENAI_API_KEY"),
-        openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini",
-        google_sheets_id=_required("GOOGLE_SHEETS_ID"),
-        google_sheet_name=os.getenv("GOOGLE_SHEET_NAME", "Leads").strip() or "Leads",
-        google_service_account_json=_required("GOOGLE_SERVICE_ACCOUNT_JSON"),
+        openai_model=_str_env("OPENAI_MODEL", "gpt-4o-mini"),
+        database_url=_required("DATABASE_URL"),
+        db_connect_timeout_seconds=_int_env("DB_CONNECT_TIMEOUT_SECONDS", 5, minimum=1),
         max_retry_attempts=_int_env("MAX_RETRY_ATTEMPTS", 3, minimum=1),
         retry_delay_seconds=_float_env("RETRY_DELAY_SECONDS", 1.0, minimum=0.1),
-        local_timezone=os.getenv("LOCAL_TIMEZONE", "UTC").strip() or "UTC",
+        local_timezone=_str_env("LOCAL_TIMEZONE", "UTC"),
     )
 
 
-def load_service_account_info(raw: str) -> dict:
-    if raw.startswith("{"):
-        return json.loads(raw)
-    with open(raw, "r", encoding="utf-8") as handle:
-        return json.load(handle)
+def _str_env(name: str, default: str) -> str:
+    raw = os.getenv(name)
+    if raw is None:
+        LOGGER.warning("[web_assistant.config] Using default env value", extra={"name": name, "default": default})
+        return default
+    cleaned = raw.strip()
+    if not cleaned:
+        LOGGER.warning("[web_assistant.config] Using default for empty env value", extra={"name": name, "default": default})
+        return default
+    return cleaned

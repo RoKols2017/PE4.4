@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import Protocol
 
 
 PHONE_RE = re.compile(r"^\+?[0-9]{10,15}$")
@@ -19,6 +20,7 @@ class Lead:
     name: str
     telegram_username: str
     phone: str
+    email: str
     contact_ok: bool
     preferred_contact_method: str
     request: str
@@ -38,6 +40,14 @@ class LeadDraft:
     telegram_username: str = ""
     phone: str = ""
     request: str = ""
+
+
+class LeadRepository(Protocol):
+    def ensure_schema(self) -> None:
+        ...
+
+    def save_lead(self, lead: Lead) -> None:
+        ...
 
 
 def normalize_text(value: str) -> str:

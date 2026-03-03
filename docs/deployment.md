@@ -6,6 +6,7 @@
 
 Expected container set:
 
+- `postgres` (primary relational storage)
 - `nginx` (public edge, HTTPS termination)
 - `web-assistant` (Flask internal HTTP app)
 - `telegram-bot` (outbound integration worker)
@@ -54,15 +55,15 @@ Current edge port mapping:
 | `NGINX_SERVER_NAME` configured | Required |
 | Bot token available in runtime env | Required |
 | OpenAI API key available for web assistant | Required |
-| Google Sheets credentials injected securely | Required |
+| PostgreSQL credentials injected securely | Required |
 | Logs visible from all containers | Required |
 
 ## Operational Notes
 
 - `telegram-bot` can run in polling mode to avoid inbound webhook exposure.
 - Keep restart policy enabled for bot and web services.
-- Both services write leads into a shared Google Sheets table `Leads`.
-- Health checks are configured for bot, web-assistant, and nginx.
+- Both services write leads into PostgreSQL table `leads` and append events into `lead_events`.
+- Health checks are configured for postgres, bot, web-assistant, and nginx.
 - Production helper scripts are available in `deploy/scripts/`.
 
 ## Commands

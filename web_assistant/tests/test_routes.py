@@ -9,12 +9,12 @@ class FakeAI:
         return f"fallback:{step}:{validation_hint}"
 
 
-class FakeSheets:
+class FakeLeadRepo:
     def __init__(self) -> None:
         self.saved = []
 
-    def append_website_lead(self, lead_id: str, draft) -> None:  # noqa: ANN001
-        self.saved.append((lead_id, draft.name))
+    def save_website_lead(self, lead_id: str, draft, session_id: str) -> None:  # noqa: ANN001
+        self.saved.append((lead_id, draft.name, session_id))
 
 
 def create_test_client():
@@ -22,13 +22,13 @@ def create_test_client():
     app.config["TESTING"] = True
     app.config["session_store"] = SessionStore()
     app.config["assistant_ai"] = FakeAI()
-    app.config["sheets_repo"] = FakeSheets()
+    app.config["lead_repo"] = FakeLeadRepo()
     app.register_blueprint(bp)
-    return app.test_client(), app.config["sheets_repo"]
+    return app.test_client(), app.config["lead_repo"]
 
 
 def test_full_flow_submit() -> None:
-    client, sheets = create_test_client()
+    client, lead_repo = create_test_client()
     sid = "sid-test"
 
     start = client.post("/api/chat/start", headers={"X-Session-Id": sid})
@@ -53,4 +53,4 @@ def test_full_flow_submit() -> None:
 
     final = client.post("/api/chat/message", json={"message": "да"}, headers={"X-Session-Id": sid})
     assert final.status_code == 200
-    assert sheets.saved
+    assert lead_repo.saved

@@ -62,7 +62,7 @@ def chat_message() -> Response:
     session_id = _session_id()
     store = current_app.config["session_store"]
     ai = current_app.config["assistant_ai"]
-    sheets = current_app.config["sheets_repo"]
+    lead_repo = current_app.config["lead_repo"]
     state = store.get_or_create(session_id)
 
     LOGGER.debug(
@@ -166,7 +166,8 @@ def chat_message() -> Response:
         )
 
     lead_id = str(uuid.uuid4())
-    sheets.append_website_lead(lead_id, state.draft)
+    LOGGER.debug("[web_assistant.routes] Saving lead", extra={"session_id": session_id, "lead_id": lead_id})
+    lead_repo.save_website_lead(lead_id, state.draft, session_id)
     store.reset(session_id)
     LOGGER.info("[web_assistant.routes] Lead saved", extra={"session_id": session_id, "lead_id": lead_id})
     return jsonify(

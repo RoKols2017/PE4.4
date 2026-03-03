@@ -1,11 +1,7 @@
+from __future__ import annotations
+
 from domain import LeadDraft
-from sheets import HEADERS, build_lead_record
-
-
-def test_headers_match_data_model_length() -> None:
-    assert len(HEADERS) == 18
-    assert HEADERS[0] == "lead_id"
-    assert HEADERS[-1] == "last_update_at_utc"
+from postgres_repository import build_lead_record
 
 
 def test_build_lead_record_sets_defaults() -> None:
@@ -14,11 +10,13 @@ def test_build_lead_record_sets_defaults() -> None:
         source_username="origin_user",
         name="Ivan",
         telegram_username="@ivan_user",
-        request="Нужна консультация",
+        request="Need consultation",
     )
-    lead = build_lead_record(lead_id="lead-1", draft=draft, local_timezone="UTC")
+    lead = build_lead_record(lead_id="74f28be3-cebe-43f1-a2b5-f7e0dc6cbf0f", draft=draft, local_timezone="UTC")
+
     assert lead.source == "telegram_bot"
     assert lead.contact_ok is True
     assert lead.preferred_contact_method == "telegram"
     assert lead.status == "new"
     assert lead.priority == "normal"
+    assert lead.email == ""

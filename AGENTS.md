@@ -9,8 +9,8 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 ## Tech Stack
 - **Language:** Python 3.12 (telegram bot + website assistant), TypeScript (experimental service scaffold)
 - **Framework:** pyTelegramBotAPI (`telebot`), Flask (website assistant)
-- **Database:** Google Sheets (from `.ai-factory/DESCRIPTION.md`)
-- **ORM:** Not applicable (based on current project description)
+- **Database:** PostgreSQL
+- **ORM:** Not used (raw SQL via psycopg)
 
 ## Project Structure
 ```text
@@ -22,7 +22,7 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 |  |- bot.py                   # Telegram bot entrypoint
 |  |- config.py                # Env parsing and settings
 |  |- ai_logic.py              # OpenAI interaction wrapper
-|  |- sheets.py                # Google Sheets schema + append logic
+|  |- postgres_repository.py   # PostgreSQL lead persistence adapter
 |  |- domain.py                # Lead validation and normalization
 |  |- session.py               # In-memory dialog sessions
 |  |- requirements.txt         # Python dependencies
@@ -31,7 +31,7 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 |  |- app.py                   # Flask entrypoint
 |  |- routes.py                # Chat and landing HTTP routes
 |  |- ai_logic.py              # OpenAI assistant policy wrapper
-|  |- sheets.py                # Shared Google Sheets write adapter
+|  |- postgres_repository.py   # PostgreSQL lead persistence adapter
 |  |- domain.py                # Website lead validation contract
 |  |- session.py               # In-memory chat sessions
 |  |- templates/index.html     # Landing page with widget shell
@@ -42,6 +42,9 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 |  |- DESCRIPTION.md           # Product and non-functional requirements
 |  |- ARCHITECTURE.md          # Architecture constraints and deployment options
 |  `- DATA_MODEL.md            # Domain model notes
+|- db/
+|  |- schema.sql               # Bootstrap SQL schema for PostgreSQL
+|  `- migrations/              # Migration files
 |- docs/
 |  |- getting-started.md       # Setup flow and first steps
 |  |- architecture.md          # Service boundaries and data flow
@@ -60,9 +63,10 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 | `.ai-factory/DESCRIPTION.md` | Project specification and requirements source |
 | `.ai-factory/ARCHITECTURE.md` | Architecture decisions and constraints |
 | `bot/bot.py` | Telegram polling bot runtime |
-| `bot/sheets.py` | Google Sheets persistence adapter |
+| `bot/postgres_repository.py` | Telegram lead PostgreSQL adapter |
 | `web_assistant/app.py` | Flask web assistant runtime |
 | `web_assistant/routes.py` | Website assistant API and landing routes |
+| `web_assistant/postgres_repository.py` | Website lead PostgreSQL adapter |
 | `README.md` | Entry point for setup and docs navigation |
 | `.ai-factory.json` | AI Factory metadata (skills and MCP status) |
 | `.opencode/package.json` | OpenCode tooling dependencies |

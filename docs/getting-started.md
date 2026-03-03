@@ -13,13 +13,13 @@ This workspace contains AI Factory context, a Python Telegram bot, and a Flask w
 | Python 3.12 | Run telegram-bot service and tests |
 | Docker + Docker Compose | Runtime for bot, web, and nginx |
 | Telegram bot token | Required when implementing bot integration |
-| Google service account | Required for Google Sheets storage |
+| PostgreSQL | Required as primary lead storage |
 | OpenAI API key | Required for website assistant AI responses |
 
 ## First Session Flow
 
 1. Copy root env template: `cp .env.example .env`.
-2. Fill `TELEGRAM_BOT_TOKEN`, `OPENAI_API_KEY`, `GOOGLE_SHEETS_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON` in `.env`.
+2. Fill `TELEGRAM_BOT_TOKEN`, `OPENAI_API_KEY`, `DATABASE_URL`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` in `.env`.
 3. Validate compose config: `docker compose --env-file .env -f compose.yml -f compose.override.yml config`.
 4. Build and run full dev stack: `docker compose --env-file .env -f compose.yml -f compose.override.yml up --build -d`.
 5. Run tests in Docker:
