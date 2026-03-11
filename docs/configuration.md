@@ -1,4 +1,4 @@
-[← Architecture](architecture.md) · [Back to README](../README.md) · [Deployment →](deployment.md)
+[← API](api.md) · [Back to README](../README.md) · [Deployment →](deployment.md)
 
 # Configuration
 
@@ -50,9 +50,19 @@
 - Keep personally identifiable information masked where possible.
 - Keep user-facing errors clear and operational errors detailed in logs.
 - Correlate service logs by `lead_id` and `session_id` where available.
+- Include `step`, `validation_hint`, and `offscript_count` in debug flow logs for dialog diagnostics.
+- Recommended log level: `DEBUG` for local development and dialog-quality troubleshooting, `INFO` for production.
+
+## Data Quality Rules
+
+- Name is normalized before save (intro phrases like `"я ..."` are stripped).
+- Contact step rejects free-form request text and asks for phone/email (web) or phone/Telegram (bot).
+- Request step rejects contact-like input and asks for short task description.
+- Quality markers are persisted in `lead_events.payload` (`qa_flags`, `offscript_count`).
 
 ## See Also
 
 - [Getting Started](getting-started.md) - setup and execution flow
+- [API](api.md) - routes guarded by runtime config
 - [Architecture](architecture.md) - service boundaries
 - [Deployment](deployment.md) - runtime configuration in containers

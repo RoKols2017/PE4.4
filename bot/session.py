@@ -15,6 +15,7 @@ class Session:
     step: str = "name"
     draft: LeadDraft = field(default_factory=lambda: LeadDraft(source_user_id=""))
     offscript_count: int = 0
+    qa_flags: list[str] = field(default_factory=list)
     updated_at: float = field(default_factory=time.time)
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import json
 import time
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -35,7 +36,13 @@ class PostgresLeadRepository:
                 cursor.execute("SELECT 1")
         LOGGER.info("[web_assistant.postgres.ensure_schema] Database is reachable")
 
-    def save_website_lead(self, lead_id: str, draft: LeadDraft, session_id: str) -> None:
+    def save_website_lead(
+        self,
+        lead_id: str,
+        draft: LeadDraft,
+        session_id: str,
+        quality_payload: dict | None = None,
+    ) -> None:
         now_utc = datetime.now(timezone.utc)
         created_at_utc = now_utc.isoformat()
         created_at_local = now_utc.astimezone(ZoneInfo(self.local_timezone)).isoformat()
@@ -79,7 +86,12 @@ class PostgresLeadRepository:
             try:
                 LOGGER.debug(
                     "[web_assistant.postgres.save_website_lead] Persisting lead",
-                    extra={"lead_id": lead_id, "attempt": attempt, "source": payload["source"]},
+                    extra={
+                        "lead_id": lead_id,
+                        "attempt": attempt,
+                        "source": payload["source"],
+                        "quality_payload": quality_payload or {},
+                    },
                 )
                 with psycopg.connect(self.database_url, connect_timeout=self.connect_timeout_seconds) as conn:
                     with conn.cursor() as cursor:
@@ -150,7 +162,7 @@ class PostgresLeadRepository:
                             {
                                 "lead_id": lead_id,
                                 "event_type": "lead_submitted",
-                                "payload": "{}",
+                                "payload": json.dumps(quality_payload or {}),
                                 "source": payload["source"],
                                 "session_id": session_id,
                                 "created_at_utc": created_at_utc,

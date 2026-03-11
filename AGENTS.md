@@ -23,8 +23,8 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 |  |- config.py                # Env parsing and settings
 |  |- ai_logic.py              # OpenAI interaction wrapper
 |  |- postgres_repository.py   # PostgreSQL lead persistence adapter
-|  |- domain.py                # Lead validation and normalization
-|  |- session.py               # In-memory dialog sessions
+|  |- domain.py                # Lead validation, normalization, and field-type guards
+|  |- session.py               # In-memory dialog sessions with QA flags
 |  |- requirements.txt         # Python dependencies
 |  `- tests/                   # Unit tests for bot modules
 |- web_assistant/
@@ -32,8 +32,8 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 |  |- routes.py                # Chat, landing, and leads-view HTTP routes
 |  |- ai_logic.py              # OpenAI assistant policy wrapper
 |  |- postgres_repository.py   # PostgreSQL lead persistence adapter
-|  |- domain.py                # Website lead validation contract
-|  |- session.py               # In-memory chat sessions
+|  |- domain.py                # Website lead validation, normalization, and field-type guards
+|  |- session.py               # In-memory chat sessions with QA flags
 |  |- templates/index.html     # Landing page with widget shell
 |  |- templates/leads.html     # Token-protected leads viewer page
 |  |- static/                  # Widget JS/CSS assets
@@ -49,8 +49,10 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 |- docs/
 |  |- getting-started.md       # Setup flow and first steps
 |  |- architecture.md          # Service boundaries and data flow
+|  |- api.md                   # Web assistant HTTP endpoints
 |  |- configuration.md         # Env vars and secret policy
-|  `- deployment.md            # Docker/nginx deployment baseline
+|  |- deployment.md            # Docker/nginx deployment baseline
+|  `- testing.md               # Docker test workflow and smoke checks
 `- .opencode/
    |- package.json             # OpenCode runtime dependencies
    |- bun.lock                 # Dependency lock file
@@ -78,8 +80,10 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 | README | `README.md` | Project landing page |
 | Getting Started | `docs/getting-started.md` | Setup flow and first steps |
 | Architecture | `docs/architecture.md` | Service boundaries and data flow |
+| API | `docs/api.md` | Web assistant HTTP endpoints |
 | Configuration | `docs/configuration.md` | Env vars and secret policy |
 | Deployment | `docs/deployment.md` | Docker and nginx baseline |
+| Testing | `docs/testing.md` | Docker test workflow |
 | Project description | `.ai-factory/DESCRIPTION.md` | Product scope and requirements |
 | AI architecture notes | `.ai-factory/ARCHITECTURE.md` | Planning constraints and options |
 | Data model | `.ai-factory/DATA_MODEL.md` | Lead schema notes |

@@ -6,7 +6,7 @@ from dataclasses import asdict
 
 from flask import Blueprint, Response, current_app, jsonify, render_template, request
 
-from domain import parse_contact, validate_contact, validate_name, validate_request
+from domain import normalize_name, parse_contact, validate_contact, validate_name, validate_request
 
 
 LOGGER = logging.getLogger(__name__)
@@ -26,6 +26,18 @@ def _step_prompt(step: str) -> str:
     if step == "request":
         return "Кратко опишите суть вашего запроса."
     return "Проверьте и подтвердите отправку: напишите 'да' или 'нет'."
+
+
+def _retry_prompt(step: str, code: str) -> str:
+    if step == "name":
+        return "Укажите только имя, например: Иван."
+    if step == "contact":
+        return "Укажите только контакт, например: +79991234567 или user@example.com."
+    if step == "request":
+        return "Коротко опишите запрос, например: Нужен лендинг для студии."
+    if step == "confirm":
+        return "Ответьте одним словом: да или нет."
+    return f"Уточните ответ по шагу ({code})."
 
 
 @bp.get("/")
@@ -179,6 +191,7 @@ def chat_message() -> Response:
         ok, code = validate_name(user_message)
         if not ok:
             state.offscript_count += 1
+            state.qa_flags.append(code)
             store.save(state)
             LOGGER.warning("[web_assistant.routes] Name validation failed", extra={"session_id": session_id, "code": code})
             return jsonify(
@@ -186,11 +199,11 @@ def chat_message() -> Response:
                     "session_id": session_id,
                     "step": state.step,
                     "typing": True,
-                    "assistant_message": ai.reply(state.step, state.draft.__dict__, user_message, code),
+                    "assistant_message": f"{ai.reply(state.step, state.draft.__dict__, user_message, code)}\n\n{_retry_prompt(state.step, code)}",
                 }
             )
 
-        state.draft.name = " ".join(user_message.split())
+        state.draft.name = normalize_name(user_message)
         state.step = "contact"
         state.offscript_count = 0
         store.save(state)
@@ -199,9 +212,10 @@ def chat_message() -> Response:
 
     if state.step == "contact":
         phone, email = parse_contact(user_message)
-        ok, code = validate_contact(phone, email)
+        ok, code = validate_contact(phone, email, raw_text=user_message)
         if not ok:
             state.offscript_count += 1
+            state.qa_flags.append(code)
             store.save(state)
             LOGGER.warning("[web_assistant.routes] Contact validation failed", extra={"session_id": session_id, "code": code})
             return jsonify(
@@ -209,7 +223,7 @@ def chat_message() -> Response:
                     "session_id": session_id,
                     "step": state.step,
                     "typing": True,
-                    "assistant_message": ai.reply(state.step, state.draft.__dict__, user_message, code),
+                    "assistant_message": f"{ai.reply(state.step, state.draft.__dict__, user_message, code)}\n\n{_retry_prompt(state.step, code)}",
                 }
             )
 
@@ -225,6 +239,7 @@ def chat_message() -> Response:
         ok, code = validate_request(user_message)
         if not ok:
             state.offscript_count += 1
+            state.qa_flags.append(code)
             store.save(state)
             LOGGER.warning("[web_assistant.routes] Request validation failed", extra={"session_id": session_id, "code": code})
             return jsonify(
@@ -232,7 +247,7 @@ def chat_message() -> Response:
                     "session_id": session_id,
                     "step": state.step,
                     "typing": True,
-                    "assistant_message": ai.reply(state.step, state.draft.__dict__, user_message, code),
+                    "assistant_message": f"{ai.reply(state.step, state.draft.__dict__, user_message, code)}\n\n{_retry_prompt(state.step, code)}",
                 }
             )
 
@@ -260,19 +275,27 @@ def chat_message() -> Response:
 
     if answer != "да":
         state.offscript_count += 1
+        state.qa_flags.append("confirm_expected")
         store.save(state)
         return jsonify(
             {
                 "session_id": session_id,
                 "step": state.step,
                 "typing": True,
-                "assistant_message": ai.reply(state.step, state.draft.__dict__, user_message, "confirm_expected"),
+                "assistant_message": (
+                    f"{ai.reply(state.step, state.draft.__dict__, user_message, 'confirm_expected')}"
+                    f"\n\n{_retry_prompt(state.step, 'confirm_expected')}"
+                ),
             }
         )
 
     lead_id = str(uuid.uuid4())
     LOGGER.debug("[web_assistant.routes] Saving lead", extra={"session_id": session_id, "lead_id": lead_id})
-    lead_repo.save_website_lead(lead_id, state.draft, session_id)
+    quality_payload = {
+        "offscript_count": state.offscript_count,
+        "qa_flags": state.qa_flags,
+    }
+    lead_repo.save_website_lead(lead_id, state.draft, session_id, quality_payload=quality_payload)
     store.reset(session_id)
     LOGGER.info("[web_assistant.routes] Lead saved", extra={"session_id": session_id, "lead_id": lead_id})
     return jsonify(

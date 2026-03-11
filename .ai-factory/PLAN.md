@@ -1,7 +1,7 @@
-# Implementation Plan: Просмотр лидов из PostgreSQL на сайте
+# Implementation Plan: Улучшение распознавания данных лида и диалогового UX (bot + web)
 
-Branch: feature/postgres-lead-storage
-Created: 2026-03-03
+Branch: none (fast mode)
+Created: 2026-03-11
 
 ## Settings
 - Testing: yes
@@ -9,22 +9,23 @@ Created: 2026-03-03
 - Docs: yes
 
 ## Commit Plan
-- **Commit 1** (after tasks 1-3): `feat(web): add leads read model and repository query`
-- **Commit 2** (after tasks 4-6): `feat(web): add leads page and protected api endpoint`
-- **Commit 3** (after tasks 7-8): `test/docs: cover leads view flow and update docs`
+- **Commit 1** (after tasks 1-3): `feat(domain): harden lead normalization and validation across channels`
+- **Commit 2** (after tasks 4-6): `feat(ai): improve prompts and invalid-input recovery flow`
+- **Commit 3** (after tasks 7-9): `test/docs: cover edge cases and document data quality rules`
 
 ## Tasks
 
-### Phase 1: Contract и доступ к данным
-- [x] Task 1: Уточнить контракт чтения лидов в `web_assistant/domain.py`: добавить DTO для списка лидов (поля карточки/таблицы) и метод репозитория `list_leads(limit, offset, source)` для страницы просмотра. Логирование: DEBUG входные параметры пагинации/фильтров, WARNING при невалидных параметрах, ERROR при нарушении контракта.
-- [x] Task 2: Реализовать чтение лидов из PostgreSQL в `web_assistant/postgres_repository.py` (select из `leads` с сортировкой `created_at_utc DESC`, limit/offset, опциональный фильтр `source`). Логирование: DEBUG SQL-граница вызова (без секретов), INFO размер выдачи, ERROR с `session_id`/context при исключениях.
-- [x] Task 3: Добавить защиту доступа к просмотру лидов через env-токен в `web_assistant/config.py` и `.env.example` (например `LEADS_VIEW_TOKEN`), чтобы не светить персональные данные публично. Логирование: WARNING при попытке доступа без/с неверным токеном, INFO при успешной авторизации просмотра.
+### Phase 1: Data quality contract (оба канала)
+- [x] Task 1: Усилить нормализацию имени и контактов в `bot/domain.py` и `web_assistant/domain.py`: добавить очистку вводов вроде `"я Вовочка"`/`"меня зовут ..."`, унификацию регистра/пробелов и более строгие правила для мусорных значений, не ломая валидные короткие имена (например `Гадя`). Логирование: DEBUG исходное/нормализованное значение (без PII-переполнения), INFO причины успешной нормализации, WARNING код причины отклонения, ERROR для неожиданных исключений.
+- [x] Task 2: Ввести расширенный набор `validation_hint` кодов в `bot/domain.py` и `web_assistant/domain.py` (например, `name_contains_intro_phrase`, `contact_looks_like_text`, `request_looks_like_contact`) и подключить их в текущие обработчики шагов `bot/bot.py` и `web_assistant/routes.py`. Логирование: DEBUG шаг и новый код валидации, INFO переходы шага после исправления, WARNING рост `offscript_count`, ERROR при неконсистентном состоянии сессии.
+- [x] Task 3: Добавить слой защиты от ошибочного маппинга полей перед сохранением (name/contact/request) в `bot/bot.py` и `web_assistant/routes.py`: если значение больше похоже на другой тип поля, не сохранять и вернуть на корректный шаг. Логирование: DEBUG результат эвристики типа поля, WARNING срабатывание guard и причина, INFO успешное прохождение guard, ERROR сбой проверки перед записью.
 
-### Phase 2: Backend маршруты и UI
-- [x] Task 4: Добавить в `web_assistant/routes.py` страницу `GET /leads` (render template) и API `GET /api/leads` с валидацией query-параметров `limit`, `offset`, `source`, проверкой токена и возвратом JSON-структуры для фронта. Логирование: DEBUG входящие параметры и `session_id`, INFO успешная выдача, WARNING некорректные фильтры, ERROR ошибки БД/сериализации.
-- [x] Task 5: Создать шаблон `web_assistant/templates/leads.html` для просмотра лидов (таблица/карточки, фильтр по source, пагинация, empty-state, error-state) в стиле текущего сайта. Логирование: через клиентский `/api/client-log` события `leads_view_opened`, `leads_filter_changed`, `leads_page_changed`.
-- [x] Task 6: Добавить клиентский скрипт `web_assistant/static/js/leads.js` и стили в `web_assistant/static/css/styles.css` для загрузки `/api/leads`, отрисовки списка и управления фильтрами/пагинацией. Логирование: DEBUG client-log для запросов/ответов (без PII в payload), WARNING для неуспешных ответов API.
+### Phase 2: LLM-assisted UX improvements without losing deterministic flow
+- [x] Task 4: Улучшить системные промпты и step hints в `bot/ai_logic.py` и `web_assistant/ai_logic.py`: добавить доменный контекст, явные инструкции по распознаванию пользовательских формулировок, запрет на подмену полей и на выдумывание данных, плюс короткие примеры корректного переспроса. Логирование: DEBUG отправляемый контекст (без токенов и PII), INFO успешный ответ модели по шагу, WARNING активация fallback, ERROR детали неуспешного вызова API.
+- [x] Task 5: Добавить служебный признак качества диалога (например, `assistant_recovery_reason` или `qa_flags`) в runtime-состояние `bot/session.py` и `web_assistant/session.py`, чтобы фиксировать частые причины непонимания без изменения пользовательского UX. Логирование: DEBUG обновление флагов на каждом шаге, INFO финальные агрегированные флаги при успешной заявке, WARNING аномально высокий `offscript_count`, ERROR ошибка сериализации/чтения state.
+- [x] Task 6: Улучшить UX-подсказки для повторного ввода в `bot/bot.py` и `web_assistant/routes.py`: при невалидных ответах давать короткий формат примера только для текущего шага, а для Telegram дополнить `/start` и `/new` более явными инструкциями по повторному сбору. Логирование: DEBUG какой шаблон подсказки выдан, INFO количество циклов до успешного шага, WARNING частые повторы, ERROR сбой отправки/формирования сообщения.
 
-### Phase 3: Тесты и документация
-- [x] Task 7: Расширить `web_assistant/tests/test_routes.py` тестами на `GET /api/leads` (успех, unauthorized, invalid params, пустая выдача) и добавить фейковую реализацию `list_leads` в `FakeLeadRepo`. Логирование: в тестовом контуре фиксировать ключевые события через `caplog`/assert по кодам ответов.
-- [x] Task 8: Обновить документацию `README.md`, `docs/configuration.md`, `docs/getting-started.md`, `docs/architecture.md`, `AGENTS.md` с описанием маршрута `/leads`, env `LEADS_VIEW_TOKEN`, и процесса проверки данных в БД. Логирование: задокументировать требования к логам доступа к просмотру лидов (INFO/WARN/ERROR).
+### Phase 3: Persistence visibility, tests, docs
+- [x] Task 7: Расширить сохранение событий качества данных в `bot/postgres_repository.py` и `web_assistant/postgres_repository.py` (через существующий поток `lead_events`), чтобы видеть почему поле было отклонено/перезапрошено. Логирование: DEBUG payload события без секретов, INFO факт записи event с `lead_id/session_id`, WARNING частые однотипные event, ERROR ошибка записи event.
+- [x] Task 8: Добавить edge-case тесты в `bot/tests/test_domain.py`, `bot/tests/test_dialog.py`, `web_assistant/tests/test_domain.py`, `web_assistant/tests/test_routes.py` на кейсы из прод-логов: `"я Вовочка"`, контакт в поле запроса, текст вместо контакта, нестабильные оффтоп-ответы, корректные короткие имена. Логирование: в тестах проверять коды валидации, переходы шагов и отсутствие регрессии happy-path.
+- [x] Task 9: Обновить документацию `README.md`, `docs/architecture.md`, `docs/configuration.md`, `docs/getting-started.md`, `AGENTS.md` по новым правилам нормализации/валидации, назначению `validation_hint`, и диагностике качества лидов через логи/lead events. Логирование: задокументировать рекомендуемые уровни (`DEBUG` dev, `INFO` prod) и обязательные корреляционные поля (`session_id`, `lead_id`, `step`, `validation_hint`).

@@ -10,6 +10,7 @@ and implementations for both channels:
 ## Quick Start
 
 ```bash
+cp .env.example .env
 docker compose --profile test build telegram-bot-test web-assistant-test
 docker compose --profile test run --rm telegram-bot-test
 docker compose --profile test run --rm web-assistant-test
@@ -20,7 +21,9 @@ docker compose --profile test run --rm web-assistant-test
 - **Python Telegram bot** (`telebot`) with in-memory step-by-step lead flow
 - **Flask website assistant** with one-page landing and embedded chat widget
 - **Protected leads viewer page** at `/leads` for PostgreSQL records
+- **Leads API** at `/api/leads` with token auth, pagination, and source filter
 - **AI assistant replies** via OpenAI API with non-fabrication constraints
+- **Deterministic validation guards** for `name/contact/request` with LLM used only for recovery prompts
 - **Shared PostgreSQL persistence** for both sources in `leads` + `lead_events`
 - **Docker-first deployment** with nginx as reverse proxy for web traffic
 - **Security baseline** for secrets, TLS headers, and request-size limits
@@ -38,7 +41,11 @@ Assistant: Спасибо! Заявка отправлена. Номер: <lead_
 
 Expected result: validated lead is saved to PostgreSQL with `source=website_assistant`.
 
+Data quality note: intro phrases in names (for example `"я Вовочка"`) are normalized before save,
+and repeated invalid attempts are tracked in `lead_events.payload` (`qa_flags`, `offscript_count`).
+
 Leads UI access: open `/leads?token=<LEADS_VIEW_TOKEN>`.
+Leads API access: send `X-Leads-View-Token: <LEADS_VIEW_TOKEN>` to `/api/leads`.
 
 ---
 
@@ -48,8 +55,10 @@ Leads UI access: open `/leads?token=<LEADS_VIEW_TOKEN>`.
 |-------|-------------|
 | [Getting Started](docs/getting-started.md) | Setup flow and first AI Factory steps |
 | [Architecture](docs/architecture.md) | Service boundaries and data flow |
+| [API](docs/api.md) | Web assistant HTTP endpoints |
 | [Configuration](docs/configuration.md) | Environment variables and secrets policy |
 | [Deployment](docs/deployment.md) | Docker and nginx deployment baseline |
+| [Testing](docs/testing.md) | Docker-based test workflow |
 
 ## License
 

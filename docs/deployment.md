@@ -1,4 +1,4 @@
-[← Configuration](configuration.md) · [Back to README](../README.md)
+[← Configuration](configuration.md) · [Back to README](../README.md) · [Testing →](testing.md)
 
 # Deployment
 
@@ -16,6 +16,11 @@ Compose files:
 - `compose.yml` - base config (shared)
 - `compose.override.yml` - development overrides (auto-merged for local)
 - `compose.production.yml` - production hardening overlay
+
+Test profile services in `compose.yml`:
+
+- `telegram-bot-test` -> runs `python -m pytest tests -q` in the bot development image
+- `web-assistant-test` -> runs `python -m pytest tests -q` in the web development image
 
 Current internal routing:
 
@@ -71,9 +76,11 @@ Current edge port mapping:
 - Development: `docker compose --env-file .env -f compose.yml -f compose.override.yml up --build -d`
 - Production: `docker compose --env-file .env -f compose.yml -f compose.production.yml up -d`
 - Validate production config: `docker compose --env-file .env -f compose.yml -f compose.production.yml config`
+- Run tests: `docker compose --profile test run --rm telegram-bot-test && docker compose --profile test run --rm web-assistant-test`
 
 ## See Also
 
 - [Getting Started](getting-started.md) - setup path before rollout
 - [Architecture](architecture.md) - component responsibilities
 - [Configuration](configuration.md) - env vars and secret policy
+- [Testing](testing.md) - Docker test workflow and smoke checks

@@ -15,6 +15,10 @@ Functional
 - Контакт для сайта: телефон или email.
 - Email сайта сохраняется в отдельную колонку `email` в PostgreSQL.
 - Ассистент ведет пошаговый диалог и мягко возвращает пользователя к сценарию при отклонении.
+- Web service отдает token-protected leads UI (`/leads`) и JSON API (`/api/leads`) для просмотра заявок.
+- На каждом канале есть детерминированные проверки для `name`, `contact`, `request`; LLM используется только для recovery-ответов.
+- Нормализация имени удаляет вводные фразы вроде `я ...` перед сохранением.
+- Диагностика качества диалога сохраняется в `lead_events.payload` через `qa_flags` и `offscript_count`.
 
 Website UX
 - Лендинг одностраничный, чат-виджет всегда доступен справа внизу.
@@ -23,7 +27,9 @@ Website UX
 Non-functional
 - Конфиги только через env/.env (локально), секреты в env/secret в контейнерах.
 - Логи в stdout, уровень через `LOG_LEVEL`, с корреляцией по `lead_id/session_id`.
+- Для локальной отладки рекомендован `LOG_LEVEL=DEBUG`, для production — `LOG_LEVEL=INFO`.
 - Session state in-memory на первом этапе (сброс при рестарте допустим).
+- Тесты проекта запускаются в Docker через compose profile `test`.
 
 Security
 - Ключи и пароль БД не коммитить.
