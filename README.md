@@ -1,13 +1,22 @@
 # PE4.4 Lead Capture Context
 
-> AI Factory context for a two-channel lead capture product (Telegram bot + website assistant).
+> AI Factory context and implementation repository for a two-channel lead capture product.
+> Контекст AI Factory и репозиторий реализации для двухканального продукта сбора лидов.
 
-This repository stores planning context, architecture constraints, reusable AI skills,
-and implementations for both channels:
+This repository contains planning context, architecture constraints, reusable AI skills, and implementations for both channels:
 - Telegram bot in `bot/`
 - Website assistant (Flask + landing widget) in `web_assistant/`
 
-## Quick Start
+Этот репозиторий содержит проектный контекст, архитектурные ограничения, AI skills и реализации для двух каналов:
+- Telegram-бот в `bot/`
+- Веб-ассистент (Flask + landing widget) в `web_assistant/`
+
+## Language / Язык
+
+- English docs: `docs/`
+- Русская документация: `docs/ru/`
+
+## Quick Start / Быстрый старт
 
 ```bash
 cp .env.example .env
@@ -17,19 +26,18 @@ docker compose --profile test run --rm telegram-bot-test
 docker compose --profile test run --rm web-assistant-test
 ```
 
-## Key Features
+## Key Features / Ключевые возможности
 
-- **Python Telegram bot** (`telebot`) with in-memory step-by-step lead flow
-- **Flask website assistant** with one-page landing and embedded chat widget
-- **Protected leads viewer page** at `/leads` for PostgreSQL records
-- **Leads API** at `/api/leads` with token auth, pagination, and source filter
-- **AI assistant replies** via OpenAI API with non-fabrication constraints
-- **Deterministic validation guards** for `name/contact/request` with LLM used only for recovery prompts
-- **Shared PostgreSQL persistence** for both sources in `leads` + `lead_events`
-- **Docker-first deployment** with Caddy as reverse proxy and automatic HTTPS for web traffic
-- **Security baseline** for secrets, TLS headers, and request-size limits
+- **Python Telegram bot** / **Telegram-бот на Python** (`telebot`) с пошаговым flow сбора заявок
+- **Flask website assistant** / **Веб-ассистент на Flask** с одностраничным лендингом и chat widget
+- **Protected leads viewer** / **Защищенная страница заявок** по адресу `/leads`
+- **Leads API** / **API заявок** на `/api/leads` с токеном, пагинацией и фильтром `source`
+- **AI recovery replies** / **AI-ответы для recovery flow** через OpenAI API без выдумывания данных
+- **Deterministic validation guards** / **Детерминированные проверки** для `name/contact/request`
+- **Shared PostgreSQL persistence** / **Общее хранилище PostgreSQL** в `leads` и `lead_events`
+- **Docker-first deployment with Caddy** / **Docker-first развертывание с Caddy и HTTPS**
 
-## Example
+## Example / Пример
 
 ```text
 User opens landing chat widget
@@ -40,17 +48,15 @@ Assistant: Укажите контакт (телефон или email)...
 Assistant: Спасибо! Заявка отправлена. Номер: <lead_id>
 ```
 
-Expected result: validated lead is saved to PostgreSQL with `source=website_assistant`.
+Expected result / Ожидаемый результат: validated lead is saved to PostgreSQL with `source=website_assistant`.
 
-Data quality note: intro phrases in names (for example `"я Вовочка"`) are normalized before save,
-and repeated invalid attempts are tracked in `lead_events.payload` (`qa_flags`, `offscript_count`).
+Data quality note / Примечание по качеству данных: intro phrases in names (for example `"я Вовочка"`) are normalized before save, and repeated invalid attempts are tracked in `lead_events.payload` (`qa_flags`, `offscript_count`).
 
-Leads UI access: open `/leads?token=<LEADS_VIEW_TOKEN>`.
-Leads API access: send `X-Leads-View-Token: <LEADS_VIEW_TOKEN>` to `/api/leads`.
+Leads UI access / Доступ к UI заявок: `/leads?token=<LEADS_VIEW_TOKEN>`
 
----
+## Documentation / Документация
 
-## Documentation
+### English
 
 | Guide | Description |
 |-------|-------------|
@@ -62,6 +68,19 @@ Leads API access: send `X-Leads-View-Token: <LEADS_VIEW_TOKEN>` to `/api/leads`.
 | [Dockerization Changelog](docs/changelog-dockerization.md) | Historical notes about the Docker stack evolution |
 | [Testing](docs/testing.md) | Docker-based test workflow |
 
-## License
+### Русский
+
+| Раздел | Описание |
+|--------|----------|
+| [Быстрый старт](docs/ru/getting-started.md) | Сценарий запуска и первые шаги |
+| [Архитектура](docs/ru/architecture.md) | Границы сервисов и поток данных |
+| [API](docs/ru/api.md) | HTTP endpoint'ы веб-ассистента |
+| [Конфигурация](docs/ru/configuration.md) | Переменные окружения и политика секретов |
+| [Развертывание](docs/ru/deployment.md) | Docker и Caddy для production |
+| [История dockerизации](docs/ru/changelog-dockerization.md) | История эволюции Docker-стека |
+| [Тестирование](docs/ru/testing.md) | Тесты и smoke checks в Docker |
+
+## License / Лицензия
 
 No license file is defined in this repository yet.
+Файл лицензии в репозитории пока не добавлен.

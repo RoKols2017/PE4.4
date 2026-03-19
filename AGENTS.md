@@ -53,6 +53,7 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 |  |- configuration.md         # Env vars and secret policy
 |  |- deployment.md            # Docker/Caddy deployment baseline
 |  |- changelog-dockerization.md # Docker stack evolution notes
+|  |- ru/                      # Russian-language documentation mirror
 |  `- testing.md               # Docker test workflow and smoke checks
 |- infra/
 |  `- caddy/
@@ -90,6 +91,13 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 | Deployment | `docs/deployment.md` | Docker and Caddy baseline |
 | Dockerization Changelog | `docs/changelog-dockerization.md` | Docker stack change history |
 | Testing | `docs/testing.md` | Docker test workflow |
+| Getting Started (RU) | `docs/ru/getting-started.md` | Русский сценарий запуска |
+| Architecture (RU) | `docs/ru/architecture.md` | Русская архитектура сервиса |
+| API (RU) | `docs/ru/api.md` | Русское описание HTTP API |
+| Configuration (RU) | `docs/ru/configuration.md` | Русские env и секреты |
+| Deployment (RU) | `docs/ru/deployment.md` | Русское руководство по deploy |
+| Dockerization Changelog (RU) | `docs/ru/changelog-dockerization.md` | История Docker-изменений на русском |
+| Testing (RU) | `docs/ru/testing.md` | Русские тесты и smoke checks |
 | Project description | `.ai-factory/DESCRIPTION.md` | Product scope and requirements |
 | AI architecture notes | `.ai-factory/ARCHITECTURE.md` | Planning constraints and options |
 | Data model | `.ai-factory/DATA_MODEL.md` | Lead schema notes |
