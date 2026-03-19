@@ -27,7 +27,10 @@
 | `WEB_ASSISTANT_HOST` | No | Flask bind host (`0.0.0.0`) |
 | `WEB_ASSISTANT_PORT` | No | Flask bind port (`5000`) |
 | `LEADS_VIEW_TOKEN` | Yes (web UI) | Access token for `/leads` and `/api/leads` |
-| `NGINX_SERVER_NAME` | Yes (prod) | Public HTTPS host name |
+| `CADDY_SITE_HOST` | Yes (prod) | Public HTTPS host name served by Caddy |
+| `CADDY_HTTP_PORT` | No | Host port published for HTTP (`80`) |
+| `CADDY_HTTPS_PORT` | No | Host port published for HTTPS (`443`) |
+| `CADDY_LOG_LEVEL` | No | Caddy runtime log level (`INFO`) |
 | `MAX_REQUEST_SIZE` | No | Request size guard for web ingress |
 
 ## Secrets Policy
@@ -36,6 +39,7 @@
 - Prefer secret stores or CI/CD secret injection in production.
 - Use local `.env` only for development, never for production deployment history.
 - Website and Telegram services share one PostgreSQL database schema (`leads`, `lead_events`).
+- `CADDY_SITE_HOST` must resolve to the VPS public IP before first HTTPS issuance.
 - Leads viewer endpoints (`/leads`, `/api/leads`) require `LEADS_VIEW_TOKEN`.
 
 ## Local Configuration Workflow
@@ -65,4 +69,3 @@
 - [Getting Started](getting-started.md) - setup and execution flow
 - [API](api.md) - routes guarded by runtime config
 - [Architecture](architecture.md) - service boundaries
-- [Deployment](deployment.md) - runtime configuration in containers

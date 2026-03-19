@@ -1,17 +1,17 @@
 Services
-- nginx (edge): terminates TLS, проксирует на web контейнер.
+- caddy (edge): автоматически получает TLS-сертификаты, проксирует на web контейнер.
 - web (ассистент сайта): HTTP only внутри сети (например, :8000), наружу не торчит.
 - bot (telegram): outbound only, без входящих портов (вебхуки необязательны; можно polling).
 - postgres (storage): внутренняя БД для заявок и событий (`leads`, `lead_events`).
-- (Опционально) certbot контейнер или внешний менеджмент сертификатов.
+- Caddy хранит ACME state в Docker volume (`caddy-data`) и публикует `80/443`.
 
 Networking
-- Один docker network (bridge), где nginx видит web.
+- Один docker network (bridge), где caddy видит web.
 - bot в той же сети не обязателен, но удобно для общего .env/логики.
 
-HTTPS strategy (выбери одно и зафиксируй)
-- Вариант A (простой): Let’s Encrypt через certbot + webroot/standalone, сертификаты монтируются в nginx.
-- Вариант B (инфра): сертификаты выдаёт внешний ingress (Traefik/Cloudflare), nginx только reverse proxy.
+HTTPS strategy
+- Выбранный вариант: Caddy как edge с автоматическим Let's Encrypt для `CADDY_SITE_HOST`.
+- Для первого выпуска сертификата домен должен резолвиться на VPS и порты `80/443` должны быть доступны снаружи.
 
 Observability
 - Логи всех контейнеров в stdout.

@@ -27,7 +27,9 @@ if [ -f "${ENV_FILE}" ]; then
   set +a
 fi
 
-NGINX_HTTP_PORT="${NGINX_HTTP_PORT:-80}"
+CADDY_SITE_HOST="${CADDY_SITE_HOST:-localhost}"
+CADDY_HTTP_PORT="${CADDY_HTTP_PORT:-80}"
+CADDY_HTTPS_PORT="${CADDY_HTTPS_PORT:-443}"
 FAILED=0
 
 log_info "Container health status"
@@ -50,11 +52,36 @@ while IFS= read -r line; do
   fi
 done < <(dc ps --format '{{.Service}} {{.State}} {{.Health}}')
 
-log_info "Edge endpoint check"
-if curl -fsS "http://127.0.0.1:${NGINX_HTTP_PORT}/health" >/dev/null; then
-  log_success "nginx /health reachable"
+log_info "Edge HTTP health check"
+if curl -fsS -H "Host: ${CADDY_SITE_HOST}" "http://127.0.0.1:${CADDY_HTTP_PORT}/health" >/dev/null; then
+  log_success "caddy HTTP /health reachable"
 else
-  log_warning "nginx /health not reachable on :${NGINX_HTTP_PORT}"
+  log_warning "caddy HTTP /health not reachable on :${CADDY_HTTP_PORT}"
+  FAILED=1
+fi
+
+log_info "Edge HTTPS health check"
+TLS_ARGS=(--resolve "${CADDY_SITE_HOST}:${CADDY_HTTPS_PORT}:127.0.0.1")
+if [ "${CADDY_SITE_HOST}" = "localhost" ]; then
+  log_warning "Using insecure local TLS check for localhost certificate trust"
+  TLS_ARGS+=(-k)
+fi
+
+if curl -fsS "${TLS_ARGS[@]}" "https://${CADDY_SITE_HOST}:${CADDY_HTTPS_PORT}/health" >/dev/null; then
+  log_success "caddy HTTPS /health reachable"
+else
+  log_warning "caddy HTTPS /health not reachable for ${CADDY_SITE_HOST}:${CADDY_HTTPS_PORT}"
+  FAILED=1
+fi
+
+log_info "HTTP to HTTPS redirect check"
+redirect_target="$(curl -sSI -H "Host: ${CADDY_SITE_HOST}" "http://127.0.0.1:${CADDY_HTTP_PORT}/" | awk -F': ' 'tolower($1)=="location" {print $2}' | tr -d '\r')"
+expected_prefix="https://${CADDY_SITE_HOST}"
+if [[ "${redirect_target}" == ${expected_prefix}* ]]; then
+  log_success "caddy redirects HTTP traffic to HTTPS"
+else
+  log_warning "HTTP redirect target is unexpected: ${redirect_target:-<empty>}"
+  FAILED=1
 fi
 
 if [ ${FAILED} -eq 0 ]; then

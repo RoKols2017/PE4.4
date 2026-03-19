@@ -8,7 +8,8 @@ This project exposes HTTP endpoints from `web_assistant` only. The Telegram bot 
 
 ## Base URL
 
-- Local through nginx: `http://localhost:8080`
+- Local through Caddy: `http://localhost:8080`
+- Local HTTPS through Caddy: `https://localhost:8443`
 - Direct Flask container in dev override: `http://localhost:5000`
 
 ## Authentication

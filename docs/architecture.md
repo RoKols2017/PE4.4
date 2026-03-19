@@ -8,11 +8,11 @@ The target system has two application services and one edge component:
 
 - `telegram-bot`: collects leads from Telegram chat flows
 - `web-assistant`: collects leads from website conversations and serves protected leads viewer UI
-- `nginx`: public HTTPS entry point for web traffic
+- `caddy`: public HTTPS entry point for web traffic
 
 ## Boundary Rules
 
-- Public inbound traffic is allowed only through `nginx`.
+- Public inbound traffic is allowed only through `caddy`.
 - `web-assistant` is internal HTTP-only service behind reverse proxy.
 - `telegram-bot` can work as outbound polling client without open inbound port.
 
@@ -58,14 +58,14 @@ Website assistant collects `phone` or `email` and stores both as first-class col
 
 ## TLS Strategy
 
-One strategy must be fixed before implementation planning:
+TLS is managed by Caddy directly:
 
-1. `certbot` + Let's Encrypt managed at nginx level
-2. external certificate/ingress management (for example cloud edge)
+1. `CADDY_SITE_HOST` points to the public domain on the VPS.
+2. Caddy terminates HTTPS, redirects HTTP to HTTPS, and stores ACME material in Docker volumes.
+3. `web-assistant` stays HTTP-only on the internal Docker network.
 
 ## See Also
 
 - [Getting Started](getting-started.md) - first-session workflow
 - [API](api.md) - route surface and response shapes
 - [Configuration](configuration.md) - env vars and secrets
-- [Deployment](deployment.md) - Docker network and runtime baseline

@@ -1,4 +1,4 @@
-[← Deployment](deployment.md) · [Back to README](../README.md)
+[← Dockerization Changelog](changelog-dockerization.md) · [Back to README](../README.md)
 
 # Testing
 
@@ -9,6 +9,12 @@
 - Use fast unit and route tests for validation before manual smoke checks.
 
 ## Automated Test Commands
+
+Validate compose + edge config before running the stack:
+
+```bash
+./deploy/scripts/validate-config.sh
+```
 
 Build test images:
 
@@ -41,6 +47,7 @@ docker compose --profile test run --rm web-assistant-test
 After `docker compose up --build -d`:
 
 - Open `http://localhost:8080` and complete a web lead flow.
+- Optional local TLS smoke check: open `https://localhost:8443` (browser may require trusting Caddy local CA).
 - Verify `/health` returns `200`.
 - Verify `/leads` rejects requests without token.
 - Verify `/api/leads?source=website_assistant` returns saved records with valid token.
@@ -49,7 +56,7 @@ After `docker compose up --build -d`:
 ## Troubleshooting
 
 - If tests fail after template changes, rebuild `web-assistant-test` so the updated templates are copied into the image.
-- If environment changes affect startup, validate with `docker compose --profile test config`.
+- If environment changes affect startup, rerun `./deploy/scripts/validate-config.sh`.
 - For dialog debugging, set `LOG_LEVEL=DEBUG` in `.env` before rerunning the stack or tests.
 
 ## See Also

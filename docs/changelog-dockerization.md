@@ -1,3 +1,5 @@
+[← Deployment](deployment.md) · [Back to README](../README.md) · [Testing →](testing.md)
+
 # Dockerization Changelog
 
 ## Title
@@ -18,10 +20,7 @@ Harden Docker stack and split compose profiles for dev/prod
   - non-root runtime user for production
   - Dockerfile healthchecks
 - Added web health endpoint `GET /health` in `web_assistant/routes.py`.
-- Updated edge proxy config in `infra/nginx/default.conf`:
-  - listens on container port `8080`
-  - adds `/health` endpoint
-  - includes baseline security headers and proxy timeouts
+- Updated the edge proxy baseline that later evolved from `nginx` to `Caddy` for automatic HTTPS, health checks, and security headers.
 - Added `.dockerignore` files for root, bot, and web assistant build contexts.
 - Added root `.env.example` for unified stack configuration.
 - Added production operations scripts under `deploy/scripts/`:
@@ -37,3 +36,9 @@ Harden Docker stack and split compose profiles for dev/prod
 ## Follow-up
 - Re-run stack build/start when package index/network conditions are stable.
 - Optionally pin Python dependencies with hashes for stronger reproducibility.
+
+## See Also
+
+- [Deployment](deployment.md) - current runtime and rollout baseline
+- [Testing](testing.md) - validation workflow for the Docker stack
+- [Architecture](architecture.md) - service boundaries behind the edge proxy

@@ -1,6 +1,6 @@
 Product
 - Два сервиса: telegram-bot и web-assistant (сайт с чат-виджетом).
-- Оба запускаются в Docker, внешний вход для сайта через nginx reverse proxy.
+- Оба запускаются в Docker, внешний вход для сайта через Caddy reverse proxy с автоматическим HTTPS.
 - Хранилище заявок: PostgreSQL, единая схема для обоих каналов.
 
 Tech stack
@@ -33,6 +33,6 @@ Non-functional
 
 Security
 - Ключи и пароль БД не коммитить.
-- Nginx: sane headers, лимит размера запроса, TLS/redirect стратегия по окружению.
+- Caddy: sane headers, лимит размера запроса, автоматический TLS/redirect по домену.
 
 ai-factory ожидает короткое и однозначное описание, чтобы планирование было предсказуемым.

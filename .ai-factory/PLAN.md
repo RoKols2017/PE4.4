@@ -1,7 +1,7 @@
-# Implementation Plan: Улучшение распознавания данных лида и диалогового UX (bot + web)
+# Implementation Plan: Замена nginx на Caddy и подготовка HTTPS-публикации на VPS
 
 Branch: none (fast mode)
-Created: 2026-03-11
+Created: 2026-03-19
 
 ## Settings
 - Testing: yes
@@ -9,23 +9,22 @@ Created: 2026-03-11
 - Docs: yes
 
 ## Commit Plan
-- **Commit 1** (after tasks 1-3): `feat(domain): harden lead normalization and validation across channels`
-- **Commit 2** (after tasks 4-6): `feat(ai): improve prompts and invalid-input recovery flow`
-- **Commit 3** (after tasks 7-9): `test/docs: cover edge cases and document data quality rules`
+- **Commit 1** (after tasks 1-3): `feat(deploy): replace nginx edge with caddy for automatic https`
+- **Commit 2** (after tasks 4-6): `chore(deploy): align scripts env and health checks for vps rollout`
+- **Commit 3** (after tasks 7-8): `docs(test): document caddy-based https deployment`
 
 ## Tasks
 
-### Phase 1: Data quality contract (оба канала)
-- [x] Task 1: Усилить нормализацию имени и контактов в `bot/domain.py` и `web_assistant/domain.py`: добавить очистку вводов вроде `"я Вовочка"`/`"меня зовут ..."`, унификацию регистра/пробелов и более строгие правила для мусорных значений, не ломая валидные короткие имена (например `Гадя`). Логирование: DEBUG исходное/нормализованное значение (без PII-переполнения), INFO причины успешной нормализации, WARNING код причины отклонения, ERROR для неожиданных исключений.
-- [x] Task 2: Ввести расширенный набор `validation_hint` кодов в `bot/domain.py` и `web_assistant/domain.py` (например, `name_contains_intro_phrase`, `contact_looks_like_text`, `request_looks_like_contact`) и подключить их в текущие обработчики шагов `bot/bot.py` и `web_assistant/routes.py`. Логирование: DEBUG шаг и новый код валидации, INFO переходы шага после исправления, WARNING рост `offscript_count`, ERROR при неконсистентном состоянии сессии.
-- [x] Task 3: Добавить слой защиты от ошибочного маппинга полей перед сохранением (name/contact/request) в `bot/bot.py` и `web_assistant/routes.py`: если значение больше похоже на другой тип поля, не сохранять и вернуть на корректный шаг. Логирование: DEBUG результат эвристики типа поля, WARNING срабатывание guard и причина, INFO успешное прохождение guard, ERROR сбой проверки перед записью.
+### Phase 1: Edge proxy replacement and production topology
+- [x] Task 1: Заменить сервис `nginx` на `caddy` в `compose.yml`, `compose.production.yml` и `compose.override.yml`: сохранить внутреннюю схему `caddy -> web-assistant:5000`, не публиковать `web-assistant` наружу в production, открыть `80/443` только для edge-сервиса, добавить постоянные volumes для ACME state/config. Логирование: оставить stdout-логи контейнеров, INFO для статуса edge-сервиса, WARNING при деградации healthcheck, ERROR при невалидной compose-конфигурации.
+- [x] Task 2: Создать конфиг `Caddyfile` (например, в `infra/caddy/Caddyfile`) с reverse proxy на `web-assistant:5000`, авто-выпуском HTTPS по домену, HTTP->HTTPS редиректом, security headers и отдельным `/health` endpoint либо корректным проксированием health-маршрута. Логирование: INFO для запросов edge-уровня, WARNING для TLS/ACME проблем, ERROR для конфигурационных ошибок Caddy.
+- [x] Task 3: Удалить или архивировать привязки к `infra/nginx/default.conf`, проверить что новые volume mounts и пути не конфликтуют с production hardening, и при необходимости скорректировать `read_only`, `tmpfs`, user/cap settings под Caddy в `compose.production.yml`. Логирование: INFO о примененной security-модели edge-контейнера, WARNING если приходится ослабить hardening ради ACME, ERROR при несовместимости прав/путей.
 
-### Phase 2: LLM-assisted UX improvements without losing deterministic flow
-- [x] Task 4: Улучшить системные промпты и step hints в `bot/ai_logic.py` и `web_assistant/ai_logic.py`: добавить доменный контекст, явные инструкции по распознаванию пользовательских формулировок, запрет на подмену полей и на выдумывание данных, плюс короткие примеры корректного переспроса. Логирование: DEBUG отправляемый контекст (без токенов и PII), INFO успешный ответ модели по шагу, WARNING активация fallback, ERROR детали неуспешного вызова API.
-- [x] Task 5: Добавить служебный признак качества диалога (например, `assistant_recovery_reason` или `qa_flags`) в runtime-состояние `bot/session.py` и `web_assistant/session.py`, чтобы фиксировать частые причины непонимания без изменения пользовательского UX. Логирование: DEBUG обновление флагов на каждом шаге, INFO финальные агрегированные флаги при успешной заявке, WARNING аномально высокий `offscript_count`, ERROR ошибка сериализации/чтения state.
-- [x] Task 6: Улучшить UX-подсказки для повторного ввода в `bot/bot.py` и `web_assistant/routes.py`: при невалидных ответах давать короткий формат примера только для текущего шага, а для Telegram дополнить `/start` и `/new` более явными инструкциями по повторному сбору. Логирование: DEBUG какой шаблон подсказки выдан, INFO количество циклов до успешного шага, WARNING частые повторы, ERROR сбой отправки/формирования сообщения.
+### Phase 2: Runtime contract, health checks, and VPS readiness
+- [x] Task 4: Обновить `.env.example` и конфигурационный контракт deployment: заменить `NGINX_HTTP_PORT`/`NGINX_SERVER_NAME` на Caddy-ориентированные переменные (например, публичный домен, HTTP/HTTPS порты, email для ACME если нужен), описать безопасные значения по умолчанию для VPS и сохранить совместимость остальных сервисов. Логирование: задокументировать INFO-уровень для production и WARNING для отсутствующих обязательных edge env vars.
+- [x] Task 5: Переписать `deploy/scripts/deploy.sh`, `deploy/scripts/health-check.sh`, `deploy/scripts/update.sh` и `deploy/scripts/rollback.sh`, чтобы они ожидали сервис `caddy`, проверяли readiness без привязки к nginx и валидировали HTTP/HTTPS edge доступ на VPS. Логирование: INFO на этапах rollout, WARNING при частичной деградации или недоступности HTTP redirect, ERROR если контейнер edge не стал healthy или TLS endpoint не отвечает.
+- [x] Task 6: Проверить и при необходимости скорректировать healthchecks в compose: edge healthcheck должен проверять Caddy-маршрут, `web-assistant` остается внутренним `/health`, а production smoke path должен подтверждать готовность сайта для домена на VPS. Логирование: INFO при успешной проверке маршрута и reverse proxy, WARNING при нестабильных ответах backend, ERROR при timeout/502/loop redirect.
 
-### Phase 3: Persistence visibility, tests, docs
-- [x] Task 7: Расширить сохранение событий качества данных в `bot/postgres_repository.py` и `web_assistant/postgres_repository.py` (через существующий поток `lead_events`), чтобы видеть почему поле было отклонено/перезапрошено. Логирование: DEBUG payload события без секретов, INFO факт записи event с `lead_id/session_id`, WARNING частые однотипные event, ERROR ошибка записи event.
-- [x] Task 8: Добавить edge-case тесты в `bot/tests/test_domain.py`, `bot/tests/test_dialog.py`, `web_assistant/tests/test_domain.py`, `web_assistant/tests/test_routes.py` на кейсы из прод-логов: `"я Вовочка"`, контакт в поле запроса, текст вместо контакта, нестабильные оффтоп-ответы, корректные короткие имена. Логирование: в тестах проверять коды валидации, переходы шагов и отсутствие регрессии happy-path.
-- [x] Task 9: Обновить документацию `README.md`, `docs/architecture.md`, `docs/configuration.md`, `docs/getting-started.md`, `AGENTS.md` по новым правилам нормализации/валидации, назначению `validation_hint`, и диагностике качества лидов через логи/lead events. Логирование: задокументировать рекомендуемые уровни (`DEBUG` dev, `INFO` prod) и обязательные корреляционные поля (`session_id`, `lead_id`, `step`, `validation_hint`).
+### Phase 3: Verification, docs, and operator guidance
+- [x] Task 7: Добавить или обновить deployment-oriented tests/validation steps: минимум `docker compose ... config`, smoke-проверки edge-контейнера, и при наличии уместных тестов — покрытие путей, которые зависят от `/health` и reverse proxy assumptions. Файлы: CI/tests docs и при необходимости shell validation helpers. Логирование: INFO о выполняемых smoke-checks, WARNING о неполном локальном покрытии HTTPS из-за отсутствия реального домена, ERROR при несоответствии compose/health сценариев.
+- [x] Task 8: Обновить `README.md`, `docs/deployment.md`, `docs/configuration.md`, `docs/architecture.md`, `docs/getting-started.md`, `docs/testing.md`, `docs/api.md` и `AGENTS.md`: заменить `nginx` на `caddy`, описать публикацию на VPS с доменом и автоматическим HTTPS, DNS/портовые требования (`80`, `443`), хранение сертификатов, smoke-check команды и ограничения локальной проверки TLS без публичного домена. Логирование: явно зафиксировать рекомендуемые production-логи edge/app/postgres и команды диагностики для проблем с ACME/TLS.

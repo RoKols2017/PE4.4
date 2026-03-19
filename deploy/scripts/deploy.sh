@@ -48,7 +48,7 @@ dc up -d --remove-orphans || error_exit "Failed to start services"
 
 MAX_WAIT=120
 WAIT=0
-SERVICES=(postgres telegram-bot web-assistant nginx)
+SERVICES=(postgres telegram-bot web-assistant caddy)
 
 log_info "Waiting for service health"
 while [ ${WAIT} -lt ${MAX_WAIT} ]; do

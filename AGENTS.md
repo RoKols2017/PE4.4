@@ -51,8 +51,12 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 |  |- architecture.md          # Service boundaries and data flow
 |  |- api.md                   # Web assistant HTTP endpoints
 |  |- configuration.md         # Env vars and secret policy
-|  |- deployment.md            # Docker/nginx deployment baseline
+|  |- deployment.md            # Docker/Caddy deployment baseline
+|  |- changelog-dockerization.md # Docker stack evolution notes
 |  `- testing.md               # Docker test workflow and smoke checks
+|- infra/
+|  `- caddy/
+|     `- Caddyfile            # Edge reverse proxy and HTTPS config
 `- .opencode/
    |- package.json             # OpenCode runtime dependencies
    |- bun.lock                 # Dependency lock file
@@ -69,6 +73,7 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 | `bot/postgres_repository.py` | Telegram lead PostgreSQL adapter |
 | `web_assistant/app.py` | Flask web assistant runtime |
 | `web_assistant/routes.py` | Website assistant API, landing, and leads routes |
+| `infra/caddy/Caddyfile` | Caddy edge routing, headers, and HTTPS behavior |
 | `web_assistant/postgres_repository.py` | Website lead PostgreSQL adapter |
 | `README.md` | Entry point for setup and docs navigation |
 | `.ai-factory.json` | AI Factory metadata (skills and MCP status) |
@@ -82,7 +87,8 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 | Architecture | `docs/architecture.md` | Service boundaries and data flow |
 | API | `docs/api.md` | Web assistant HTTP endpoints |
 | Configuration | `docs/configuration.md` | Env vars and secret policy |
-| Deployment | `docs/deployment.md` | Docker and nginx baseline |
+| Deployment | `docs/deployment.md` | Docker and Caddy baseline |
+| Dockerization Changelog | `docs/changelog-dockerization.md` | Docker stack change history |
 | Testing | `docs/testing.md` | Docker test workflow |
 | Project description | `.ai-factory/DESCRIPTION.md` | Product scope and requirements |
 | AI architecture notes | `.ai-factory/ARCHITECTURE.md` | Planning constraints and options |
