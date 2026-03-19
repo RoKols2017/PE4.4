@@ -5,3 +5,4 @@ bot/.env
 
 # Local tooling dependencies
 .opencode/node_modules/
+services/telegram-bot/node_modules/

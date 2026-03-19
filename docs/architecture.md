@@ -1,4 +1,4 @@
-[← Getting Started](getting-started.md) · [Back to README](../README.md) · [Configuration →](configuration.md)
+[← Getting Started](getting-started.md) · [Back to README](../README.md) · [API →](api.md)
 
 # Architecture
 
@@ -7,12 +7,12 @@
 The target system has two application services and one edge component:
 
 - `telegram-bot`: collects leads from Telegram chat flows
-- `web-assistant`: collects leads from website conversations
-- `nginx`: public HTTPS entry point for web traffic
+- `web-assistant`: collects leads from website conversations and serves protected leads viewer UI
+- `caddy`: public HTTPS entry point for web traffic
 
 ## Boundary Rules
 
-- Public inbound traffic is allowed only through `nginx`.
+- Public inbound traffic is allowed only through `caddy`.
 - `web-assistant` is internal HTTP-only service behind reverse proxy.
 - `telegram-bot` can work as outbound polling client without open inbound port.
 
@@ -25,34 +25,47 @@ Both channels use a shared `Lead` model:
 | `name` | Lead name |
 | `telegram_username` | Optional contact |
 | `phone` | Optional contact |
+| `email` | Optional web contact |
 | `request` | Free-form request text |
 | `source` | `telegram_bot` or `website_assistant` |
 
-Validation rule: at least one contact must be provided (`telegram_username` or `phone`).
+Validation rule: at least one contact must be provided. For Telegram that means `phone` or `telegram_username`; for web that means `phone` or `email`.
 
-### Website Contact Compatibility
+Name inputs are normalized before persistence (for example `"я Вовочка"` -> `"Вовочка"`).
+If a value looks like the wrong field type (contact in request field, request text in contact field),
+the flow keeps the current step and asks for corrected input.
 
-Website assistant collects `phone` or `email`. Shared sheet schema is kept compatible with Telegram flow:
+### Website Contact Model
 
-- website `phone` is written to column `I` (`phone`)
-- website `email` is written to column `H` (`telegram_username`) as `email:<value>`
-- `source` is always `website_assistant` for web channel rows
+Website assistant collects `phone` or `email` and stores both as first-class columns in PostgreSQL.
+`source` is always `website_assistant` for web channel rows.
 
 ## Data and Observability
 
-- Primary storage: Google Sheets with a single shared column schema.
+- Primary storage: PostgreSQL with tables `leads` and `lead_events`.
+- Read path: web-assistant provides `/api/leads` + `/leads` (token-protected) for operations visibility.
+- Data quality events: `lead_events.payload` stores `qa_flags` and `offscript_count` for diagnostics.
 - Logs: all services write to stdout for container aggregation.
-- Correlation: include `lead_id` in logs where possible.
+- Correlation: include `lead_id` and/or `session_id` in logs where possible.
+
+## Dialog Flow
+
+- `telegram-bot`: `/start` or `/new` resets the in-memory session and starts the collection flow.
+- `web-assistant`: `POST /api/chat/start` issues `session_id` and begins the same four-step flow.
+- Validation happens before save on every step: `name`, `contact`, `request`, `confirm`.
+- Wrong-field inputs stay on the same step and get a retry prompt plus AI-generated recovery text.
+- Final confirmation persists the lead and resets the session state.
 
 ## TLS Strategy
 
-One strategy must be fixed before implementation planning:
+TLS is managed by Caddy directly:
 
-1. `certbot` + Let's Encrypt managed at nginx level
-2. external certificate/ingress management (for example cloud edge)
+1. `CADDY_SITE_HOST` points to the public domain on the VPS.
+2. Caddy terminates HTTPS, redirects HTTP to HTTPS, and stores ACME material in Docker volumes.
+3. `web-assistant` stays HTTP-only on the internal Docker network.
 
 ## See Also
 
 - [Getting Started](getting-started.md) - first-session workflow
+- [API](api.md) - route surface and response shapes
 - [Configuration](configuration.md) - env vars and secrets
-- [Deployment](deployment.md) - Docker network and runtime baseline

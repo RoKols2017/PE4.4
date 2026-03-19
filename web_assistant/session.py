@@ -13,6 +13,8 @@ class SessionState:
     draft: LeadDraft = field(default_factory=lambda: LeadDraft(source_user_id=""))
     updated_at: float = field(default_factory=time.time)
     offscript_count: int = 0
+    qa_flags: list[str] = field(default_factory=list)
+    qa_flags: list[str] = field(default_factory=list)
 
 
 class SessionStore:

@@ -1,0 +1,43 @@
+{
+	admin off
+	log default {
+		output stdout
+		format console
+		level {$CADDY_LOG_LEVEL:INFO}
+	}
+}
+
+(common_proxy) {
+	encode zstd gzip
+
+	request_body {
+		max_size {$MAX_REQUEST_SIZE:1MB}
+	}
+
+	header {
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+	}
+
+	log {
+		output stdout
+		format console
+	}
+
+	reverse_proxy web-assistant:5000
+}
+
+http://{$CADDY_SITE_HOST:localhost} {
+	@health path /health
+	handle @health {
+		reverse_proxy web-assistant:5000
+	}
+
+	redir https://{$CADDY_SITE_HOST:localhost}{$CADDY_HTTPS_REDIRECT_SUFFIX:}{uri} 308
+}
+
+https://{$CADDY_SITE_HOST:localhost} {
+	import common_proxy
+}

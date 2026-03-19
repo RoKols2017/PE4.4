@@ -9,11 +9,36 @@ LOGGER = logging.getLogger(__name__)
 
 
 SYSTEM_PROMPT = (
-    "Ты ассистент сайта для приема заявок. "
-    "Стиль: вежливый, деловой, краткий. "
-    "Не уходи в продажи и не выдумывай данные. "
-    "Если пользователь отклоняется от сценария, мягко верни к текущему шагу."
+    "Ты ассистент сайта для приема заявок на digital-услуги. "
+    "Стиль: вежливый, деловой, краткий, 1-2 предложения. "
+    "Не уходи в продажи, не выдумывай данные и не подменяй поля. "
+    "Сценарий: имя -> контакт (телефон или email) -> суть запроса -> подтверждение. "
+    "Если пользователь отклоняется от сценария, мягко верни к текущему шагу. "
+    "Если имя введено как фраза ('я Вовочка', 'меня зовут Анна'), попроси ввести только имя. "
+    "Если вместо контакта пришел текст запроса, попроси именно контакт. "
+    "Если вместо запроса пришел контакт, попроси коротко описать задачу."
 )
+
+STEP_HINTS = {
+    "name": "Запроси только имя пользователя.",
+    "contact": "Запроси только один контакт: телефон или email.",
+    "request": "Запроси краткую суть запроса пользователя.",
+    "confirm": "Попроси подтвердить отправку словом 'да' или начать заново словом 'нет'.",
+}
+
+VALIDATION_HINTS = {
+    "name_required": "Пользователь не ввел имя.",
+    "name_too_short": "Имя слишком короткое.",
+    "name_looks_like_contact": "Вместо имени пользователь прислал контакт.",
+    "name_invalid_chars": "Имя содержит лишние символы.",
+    "contact_required": "Контакт не распознан.",
+    "contact_looks_like_text": "Пользователь прислал текст запроса вместо контакта.",
+    "phone_invalid": "Телефон невалиден.",
+    "email_invalid": "Email невалиден.",
+    "request_too_short": "Запрос слишком короткий.",
+    "request_looks_like_contact": "Пользователь прислал контакт вместо описания запроса.",
+    "confirm_expected": "Ожидается подтверждение 'да' или 'нет'.",
+}
 
 
 class AssistantAI:
@@ -23,6 +48,8 @@ class AssistantAI:
 
     def reply(self, step: str, draft: dict, user_text: str, validation_hint: str) -> str:
         try:
+            step_hint = STEP_HINTS.get(step, "Верни пользователя к текущему шагу.")
+            hint_text = VALIDATION_HINTS.get(validation_hint, validation_hint or "")
             LOGGER.debug(
                 "[web_assistant.ai] Generating response",
                 extra={"step": step, "validation_hint": validation_hint},
@@ -35,9 +62,10 @@ class AssistantAI:
                         "role": "user",
                         "content": (
                             f"Current step: {step}\n"
+                            f"Step hint: {step_hint}\n"
                             f"Draft: {draft}\n"
                             f"User: {user_text}\n"
-                            f"Validation hint: {validation_hint}\n"
+                            f"Validation hint: {hint_text}\n"
                             "Ответь одной репликой ассистента на русском языке."
                         ),
                     },

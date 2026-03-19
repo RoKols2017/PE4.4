@@ -1,5 +1,5 @@
-import json
 import os
+import logging
 from dataclasses import dataclass
 
 from dotenv import load_dotenv
@@ -7,15 +7,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+LOGGER = logging.getLogger(__name__)
+
 
 @dataclass(frozen=True)
 class Settings:
     telegram_bot_token: str
     openai_api_key: str
     openai_model: str
-    google_sheets_id: str
-    google_service_account_json: str
-    google_sheet_name: str
+    database_url: str
+    db_connect_timeout_seconds: int
     local_timezone: str
     poll_interval_seconds: int
     max_retry_attempts: int
@@ -34,29 +35,37 @@ def load_settings() -> Settings:
     return Settings(
         telegram_bot_token=_required("TELEGRAM_BOT_TOKEN"),
         openai_api_key=_required("OPENAI_API_KEY"),
-        openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini",
-        google_sheets_id=_required("GOOGLE_SHEETS_ID"),
-        google_service_account_json=_required("GOOGLE_SERVICE_ACCOUNT_JSON"),
-        google_sheet_name=os.getenv("GOOGLE_SHEET_NAME", "Leads").strip() or "Leads",
-        local_timezone=os.getenv("LOCAL_TIMEZONE", "UTC").strip() or "UTC",
+        openai_model=_str_env("OPENAI_MODEL", "gpt-4o-mini"),
+        database_url=_required("DATABASE_URL"),
+        db_connect_timeout_seconds=_int_env("DB_CONNECT_TIMEOUT_SECONDS", 5, minimum=1),
+        local_timezone=_str_env("LOCAL_TIMEZONE", "UTC"),
         poll_interval_seconds=_int_env("POLL_INTERVAL_SECONDS", 1, minimum=1),
         max_retry_attempts=_int_env("MAX_RETRY_ATTEMPTS", 3, minimum=1),
         retry_delay_seconds=_float_env("RETRY_DELAY_SECONDS", 1.0, minimum=0.1),
-        log_level=os.getenv("LOG_LEVEL", "INFO").strip().upper() or "INFO",
+        log_level=_str_env("LOG_LEVEL", "INFO").upper(),
     )
 
 
-def load_service_account_info(raw: str) -> dict:
-    # Supports either raw JSON content or a path to a JSON file.
-    if raw.startswith("{"):
-        return json.loads(raw)
+def _str_env(name: str, default: str) -> str:
+    raw = os.getenv(name)
+    if raw is None:
+        LOGGER.warning("[bot.config] Using default env value", extra={"env_var": name, "default": default})
+        return default
 
-    with open(raw, "r", encoding="utf-8") as file:
-        return json.load(file)
+    cleaned = raw.strip()
+    if not cleaned:
+        LOGGER.warning("[bot.config] Using default for empty env value", extra={"env_var": name, "default": default})
+        return default
+    return cleaned
 
 
 def _int_env(name: str, default: int, minimum: int = 0) -> int:
-    raw = os.getenv(name, str(default)).strip()
+    raw_input = os.getenv(name)
+    if raw_input is None:
+        LOGGER.warning("[bot.config] Using default env value", extra={"env_var": name, "default": default})
+        raw = str(default)
+    else:
+        raw = raw_input.strip()
     try:
         value = int(raw)
     except ValueError as error:
@@ -69,7 +78,12 @@ def _int_env(name: str, default: int, minimum: int = 0) -> int:
 
 
 def _float_env(name: str, default: float, minimum: float = 0.0) -> float:
-    raw = os.getenv(name, str(default)).strip()
+    raw_input = os.getenv(name)
+    if raw_input is None:
+        LOGGER.warning("[bot.config] Using default env value", extra={"env_var": name, "default": default})
+        raw = str(default)
+    else:
+        raw = raw_input.strip()
     try:
         value = float(raw)
     except ValueError as error:

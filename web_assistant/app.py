@@ -5,10 +5,11 @@ import logging
 from flask import Flask
 
 from ai_logic import AssistantAI
-from config import load_service_account_info, load_settings
+from config import load_settings
+from domain import LeadRepository
+from postgres_repository import PostgresLeadRepository
 from routes import bp
 from session import SessionStore
-from sheets import SheetsLeadRepository
 
 
 def _configure_logging(level: str) -> None:
@@ -27,27 +28,27 @@ def create_app() -> Flask:
         "[web_assistant.app] Config snapshot",
         extra={
             "app_port": settings.app_port,
-            "google_sheet_name": settings.google_sheet_name,
+            "storage_backend": "postgres",
             "openai_model": settings.openai_model,
+            "leads_view_enabled": bool(settings.leads_view_token),
         },
     )
 
     app = Flask(__name__, static_folder="static", template_folder="templates")
 
-    service_account_info = load_service_account_info(settings.google_service_account_json)
-    sheets_repo = SheetsLeadRepository(
-        spreadsheet_id=settings.google_sheets_id,
-        sheet_name=settings.google_sheet_name,
-        service_account_info=service_account_info,
+    lead_repo: LeadRepository = PostgresLeadRepository(
+        database_url=settings.database_url,
         local_timezone=settings.local_timezone,
         max_retry_attempts=settings.max_retry_attempts,
         retry_delay_seconds=settings.retry_delay_seconds,
+        connect_timeout_seconds=settings.db_connect_timeout_seconds,
     )
-    sheets_repo.ensure_schema()
+    lead_repo.ensure_schema()
 
     app.config["assistant_ai"] = AssistantAI(settings.openai_api_key, settings.openai_model)
     app.config["session_store"] = SessionStore()
-    app.config["sheets_repo"] = sheets_repo
+    app.config["lead_repo"] = lead_repo
+    app.config["leads_view_token"] = settings.leads_view_token
 
     app.register_blueprint(bp)
 

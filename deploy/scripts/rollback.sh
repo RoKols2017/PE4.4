@@ -26,7 +26,7 @@ export VERSION="${TARGET_VERSION}"
 
 log_info "Rolling back to VERSION=${VERSION}"
 dc pull || true
-dc up -d --force-recreate --no-deps telegram-bot web-assistant nginx || error_exit "Rollback failed"
+dc up -d --force-recreate --no-deps telegram-bot web-assistant caddy || error_exit "Rollback failed"
 
 "${SCRIPT_DIR}/health-check.sh" || error_exit "Health check failed after rollback"
 log_success "Rollback completed"

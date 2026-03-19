@@ -2,14 +2,16 @@ from __future__ import annotations
 
 import logging
 import uuid
+from dataclasses import asdict
 
 from flask import Blueprint, Response, current_app, jsonify, render_template, request
 
-from domain import parse_contact, validate_contact, validate_name, validate_request
+from domain import normalize_name, parse_contact, validate_contact, validate_name, validate_request
 
 
 LOGGER = logging.getLogger(__name__)
 bp = Blueprint("web_assistant", __name__)
+ALLOWED_SOURCES = {"telegram_bot", "website_assistant"}
 
 
 def _session_id() -> str:
@@ -26,9 +28,124 @@ def _step_prompt(step: str) -> str:
     return "Проверьте и подтвердите отправку: напишите 'да' или 'нет'."
 
 
+def _retry_prompt(step: str, code: str) -> str:
+    if step == "name":
+        return "Укажите только имя, например: Иван."
+    if step == "contact":
+        return "Укажите только контакт, например: +79991234567 или user@example.com."
+    if step == "request":
+        return "Коротко опишите запрос, например: Нужен лендинг для студии."
+    if step == "confirm":
+        return "Ответьте одним словом: да или нет."
+    return f"Уточните ответ по шагу ({code})."
+
+
 @bp.get("/")
 def index() -> str:
     return render_template("index.html")
+
+
+def _authorize_leads_view() -> tuple[bool, Response | None]:
+    expected = str(current_app.config.get("leads_view_token", "")).strip()
+    provided = request.headers.get("X-Leads-View-Token", "").strip() or request.args.get("token", "").strip()
+
+    if not expected:
+        LOGGER.error("[web_assistant.routes] Leads view is not configured")
+        response = jsonify({"error": "leads_view_not_configured"})
+        response.status_code = 503
+        return False, response
+
+    if provided != expected:
+        LOGGER.warning(
+            "[web_assistant.routes] Unauthorized leads view access",
+            extra={"path": request.path, "remote": request.remote_addr or "unknown"},
+        )
+        response = jsonify({"error": "unauthorized"})
+        response.status_code = 401
+        return False, response
+
+    LOGGER.info("[web_assistant.routes] Leads view authorized", extra={"path": request.path})
+    return True, None
+
+
+def _parse_pagination() -> tuple[int, int, str | None, Response | None]:
+    raw_limit = request.args.get("limit", "20").strip()
+    raw_offset = request.args.get("offset", "0").strip()
+    raw_source = request.args.get("source", "").strip()
+
+    try:
+        limit = int(raw_limit)
+        offset = int(raw_offset)
+    except ValueError:
+        LOGGER.warning(
+            "[web_assistant.routes] Invalid pagination parameters",
+            extra={"limit": raw_limit, "offset": raw_offset},
+        )
+        response = jsonify({"error": "invalid_pagination"})
+        response.status_code = 400
+        return 0, 0, None, response
+
+    if limit < 1 or limit > 100 or offset < 0:
+        LOGGER.warning(
+            "[web_assistant.routes] Pagination out of range",
+            extra={"limit": limit, "offset": offset},
+        )
+        response = jsonify({"error": "invalid_pagination_range"})
+        response.status_code = 400
+        return 0, 0, None, response
+
+    source = raw_source or None
+    if source and source not in ALLOWED_SOURCES:
+        LOGGER.warning("[web_assistant.routes] Invalid source filter", extra={"source": source})
+        response = jsonify({"error": "invalid_source"})
+        response.status_code = 400
+        return 0, 0, None, response
+
+    LOGGER.debug(
+        "[web_assistant.routes] Leads pagination parsed",
+        extra={"limit": limit, "offset": offset, "source": source or "all"},
+    )
+    return limit, offset, source, None
+
+
+@bp.get("/leads")
+def leads_page() -> str | Response:
+    authorized, error_response = _authorize_leads_view()
+    if not authorized:
+        return error_response
+    return render_template("leads.html", leads_view_token=current_app.config.get("leads_view_token", ""))
+
+
+@bp.get("/api/leads")
+def api_leads() -> Response:
+    authorized, error_response = _authorize_leads_view()
+    if not authorized:
+        return error_response
+
+    limit, offset, source, parse_error = _parse_pagination()
+    if parse_error is not None:
+        return parse_error
+
+    lead_repo = current_app.config["lead_repo"]
+    try:
+        items, total = lead_repo.list_leads(limit=limit, offset=offset, source=source)
+        LOGGER.info(
+            "[web_assistant.routes] Leads loaded",
+            extra={"limit": limit, "offset": offset, "source": source or "all", "count": len(items), "total": total},
+        )
+        return jsonify(
+            {
+                "items": [asdict(item) for item in items],
+                "pagination": {"limit": limit, "offset": offset, "total": total},
+                "source": source or "all",
+            }
+        )
+    except Exception as error:  # noqa: BLE001
+        LOGGER.error(
+            "[web_assistant.routes] Failed to read leads",
+            extra={"limit": limit, "offset": offset, "source": source or "all", "error": str(error)},
+        )
+        return jsonify({"error": "leads_read_failed"}), 500
 
 
 @bp.get("/health")
@@ -62,7 +179,7 @@ def chat_message() -> Response:
     session_id = _session_id()
     store = current_app.config["session_store"]
     ai = current_app.config["assistant_ai"]
-    sheets = current_app.config["sheets_repo"]
+    lead_repo = current_app.config["lead_repo"]
     state = store.get_or_create(session_id)
 
     LOGGER.debug(
@@ -74,6 +191,7 @@ def chat_message() -> Response:
         ok, code = validate_name(user_message)
         if not ok:
             state.offscript_count += 1
+            state.qa_flags.append(code)
             store.save(state)
             LOGGER.warning("[web_assistant.routes] Name validation failed", extra={"session_id": session_id, "code": code})
             return jsonify(
@@ -81,11 +199,11 @@ def chat_message() -> Response:
                     "session_id": session_id,
                     "step": state.step,
                     "typing": True,
-                    "assistant_message": ai.reply(state.step, state.draft.__dict__, user_message, code),
+                    "assistant_message": f"{ai.reply(state.step, state.draft.__dict__, user_message, code)}\n\n{_retry_prompt(state.step, code)}",
                 }
             )
 
-        state.draft.name = " ".join(user_message.split())
+        state.draft.name = normalize_name(user_message)
         state.step = "contact"
         state.offscript_count = 0
         store.save(state)
@@ -94,9 +212,10 @@ def chat_message() -> Response:
 
     if state.step == "contact":
         phone, email = parse_contact(user_message)
-        ok, code = validate_contact(phone, email)
+        ok, code = validate_contact(phone, email, raw_text=user_message)
         if not ok:
             state.offscript_count += 1
+            state.qa_flags.append(code)
             store.save(state)
             LOGGER.warning("[web_assistant.routes] Contact validation failed", extra={"session_id": session_id, "code": code})
             return jsonify(
@@ -104,7 +223,7 @@ def chat_message() -> Response:
                     "session_id": session_id,
                     "step": state.step,
                     "typing": True,
-                    "assistant_message": ai.reply(state.step, state.draft.__dict__, user_message, code),
+                    "assistant_message": f"{ai.reply(state.step, state.draft.__dict__, user_message, code)}\n\n{_retry_prompt(state.step, code)}",
                 }
             )
 
@@ -120,6 +239,7 @@ def chat_message() -> Response:
         ok, code = validate_request(user_message)
         if not ok:
             state.offscript_count += 1
+            state.qa_flags.append(code)
             store.save(state)
             LOGGER.warning("[web_assistant.routes] Request validation failed", extra={"session_id": session_id, "code": code})
             return jsonify(
@@ -127,7 +247,7 @@ def chat_message() -> Response:
                     "session_id": session_id,
                     "step": state.step,
                     "typing": True,
-                    "assistant_message": ai.reply(state.step, state.draft.__dict__, user_message, code),
+                    "assistant_message": f"{ai.reply(state.step, state.draft.__dict__, user_message, code)}\n\n{_retry_prompt(state.step, code)}",
                 }
             )
 
@@ -155,18 +275,27 @@ def chat_message() -> Response:
 
     if answer != "да":
         state.offscript_count += 1
+        state.qa_flags.append("confirm_expected")
         store.save(state)
         return jsonify(
             {
                 "session_id": session_id,
                 "step": state.step,
                 "typing": True,
-                "assistant_message": ai.reply(state.step, state.draft.__dict__, user_message, "confirm_expected"),
+                "assistant_message": (
+                    f"{ai.reply(state.step, state.draft.__dict__, user_message, 'confirm_expected')}"
+                    f"\n\n{_retry_prompt(state.step, 'confirm_expected')}"
+                ),
             }
         )
 
     lead_id = str(uuid.uuid4())
-    sheets.append_website_lead(lead_id, state.draft)
+    LOGGER.debug("[web_assistant.routes] Saving lead", extra={"session_id": session_id, "lead_id": lead_id})
+    quality_payload = {
+        "offscript_count": state.offscript_count,
+        "qa_flags": state.qa_flags,
+    }
+    lead_repo.save_website_lead(lead_id, state.draft, session_id, quality_payload=quality_payload)
     store.reset(session_id)
     LOGGER.info("[web_assistant.routes] Lead saved", extra={"session_id": session_id, "lead_id": lead_id})
     return jsonify(

@@ -1,4 +1,8 @@
 services:
+  postgres:
+    ports:
+      - "${POSTGRES_EXPOSE_PORT:-55432}:5432"
+
   telegram-bot:
     build:
       target: development
@@ -18,9 +22,12 @@ services:
     ports:
       - "5000:5000"
 
-  nginx:
+  caddy:
+    environment:
+      CADDY_HTTPS_REDIRECT_SUFFIX: :8443
     ports:
-      - "8080:8080"
+      - "8080:80"
+      - "8443:443"
 
   telegram-bot-test:
     build:

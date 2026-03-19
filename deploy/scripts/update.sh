@@ -25,7 +25,7 @@ export VERSION
 
 log_info "Updating services to VERSION=${VERSION}"
 dc pull || true
-dc up -d --force-recreate --no-deps telegram-bot web-assistant nginx || error_exit "Update failed"
+dc up -d --force-recreate --no-deps telegram-bot web-assistant caddy || error_exit "Update failed"
 
 "${SCRIPT_DIR}/health-check.sh" || error_exit "Health check failed after update"
 log_success "Update completed"

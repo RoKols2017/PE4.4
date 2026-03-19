@@ -12,6 +12,22 @@ x-security: &default-security
     - ALL
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512M
+          pids: 150
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    logging: *default-logging
+    restart: unless-stopped
+
   telegram-bot:
     build: null
     image: ${TELEGRAM_BOT_IMAGE:?TELEGRAM_BOT_IMAGE must be set}
@@ -50,15 +66,15 @@ services:
     logging: *default-logging
     restart: unless-stopped
 
-  nginx:
+  caddy:
     <<: *default-security
-    user: "101:101"
+    cap_add:
+      - NET_BIND_SERVICE
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
-      - /var/cache/nginx:noexec,nosuid,size=50m
-      - /var/run:noexec,nosuid,size=10m
     ports:
-      - "${NGINX_HTTP_PORT:-80}:8080"
+      - "${CADDY_HTTP_PORT:-80}:80"
+      - "${CADDY_HTTPS_PORT:-443}:443"
     deploy:
       resources:
         limits:
