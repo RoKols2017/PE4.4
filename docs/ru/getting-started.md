@@ -28,7 +28,7 @@
    - `docker compose --env-file .env -f compose.yml -f compose.override.yml --profile test run --rm web-assistant-test`
 6. Откройте edge endpoint: `http://localhost:8080`.
 7. При необходимости проверьте локальный HTTPS: `https://localhost:8443`.
-8. Откройте страницу заявок: `http://localhost:8080/leads?token=<LEADS_VIEW_TOKEN>`.
+8. Откройте страницу заявок: `http://localhost:8080/leads?token=test-token`.
 
 ## Первые проверки после запуска
 

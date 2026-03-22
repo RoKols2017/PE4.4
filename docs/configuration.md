@@ -14,7 +14,7 @@
 |----------|----------|---------|
 | `LOG_LEVEL` | No | Log verbosity (`info` by default) |
 | `TELEGRAM_BOT_TOKEN` | Yes (bot) | Telegram API access |
-| `OPENAI_API_KEY` | Yes (bot) | OpenAI API authentication |
+| `OPENAI_API_KEY` | Yes (bot/web) | OpenAI API authentication |
 | `OPENAI_MODEL` | No | LLM model for dialog prompts |
 | `DATABASE_URL` | Yes | PostgreSQL DSN for both services |
 | `POSTGRES_DB` | Yes (compose) | PostgreSQL database name |

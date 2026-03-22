@@ -77,4 +77,3 @@ TLS is managed by Caddy directly:
 - [Getting Started](getting-started.md) - first-session workflow
 - [Workflow](workflow.md) - lead capture flow and improvement ideas
 - [API](api.md) - route surface and response shapes
-- [Configuration](configuration.md) - env vars and secrets

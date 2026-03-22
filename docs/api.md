@@ -85,7 +85,7 @@ Returns the protected leads viewer HTML page.
 Example:
 
 ```text
-/leads?token=<LEADS_VIEW_TOKEN>
+/leads?token=test-token
 ```
 
 ### `GET /api/leads`
@@ -136,5 +136,4 @@ Response:
 
 - [Architecture](architecture.md) - service boundaries and flow ownership
 - [Workflow](workflow.md) - step-by-step lead collection flow
-- [Configuration](configuration.md) - auth and env requirements
 - [Testing](testing.md) - endpoint verification in Docker

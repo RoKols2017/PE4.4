@@ -76,4 +76,3 @@ TLS управляется напрямую через Caddy:
 - [Быстрый старт](getting-started.md) - первый запуск
 - [Workflow](workflow.md) - flow сбора заявок и идеи улучшений
 - [API](api.md) - маршруты и ответы
-- [Конфигурация](configuration.md) - env-переменные и секреты

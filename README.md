@@ -53,7 +53,7 @@ Expected result / Ожидаемый результат: validated lead is saved
 
 Data quality note / Примечание по качеству данных: intro phrases in names (for example `"я Вовочка"`) are normalized before save, and repeated invalid attempts are tracked in `lead_events.payload` (`qa_flags`, `offscript_count`).
 
-Leads UI access / Доступ к UI заявок: `/leads?token=<LEADS_VIEW_TOKEN>`
+Leads UI access / Доступ к UI заявок: `/leads?token=test-token`
 
 ## Documentation / Документация
 

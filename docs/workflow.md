@@ -100,7 +100,6 @@ The main difference is the transport layer:
 
 ## Current Weak Spots
 
-- Session state lives only in memory, so unfinished dialogs are lost after a restart.
 - Session state still lives only in memory, so unfinished dialogs are lost after a restart.
 - The contract is intentionally narrow, so model behavior must stay simple and strongly tested.
 - The workflow has no built-in deduplication or anti-spam protection before save.

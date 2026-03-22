@@ -26,7 +26,7 @@ This workspace contains AI Factory context, a Python Telegram bot, and a Flask w
    - `docker compose --env-file .env -f compose.yml -f compose.override.yml --profile test run --rm web-assistant-test`
 6. Open edge endpoint: `http://localhost:8080`.
 7. Optional local HTTPS check: `https://localhost:8443`.
-8. Open leads viewer: `http://localhost:8080/leads?token=<LEADS_VIEW_TOKEN>`.
+8. Open leads viewer: `http://localhost:8080/leads?token=test-token`.
 
 ## First Checks After Boot
 

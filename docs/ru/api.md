@@ -87,7 +87,7 @@ Health endpoint для Docker health checks.
 Пример:
 
 ```text
-/leads?token=<LEADS_VIEW_TOKEN>
+/leads?token=test-token
 ```
 
 ### `GET /api/leads`
