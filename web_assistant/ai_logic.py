@@ -5,6 +5,7 @@ import logging
 from openai import OpenAI
 
 from runtime_policy import (
+    FALLBACK_REASON_MODEL_CALL_FAILED,
     ResponsePolicyInput,
     StructuredAIResponse,
     build_system_prompt,
@@ -78,7 +79,7 @@ class AssistantAI:
                 error,
                 extra={"step": current_step, "session_id": correlation_id},
             )
-            return fallback_response(current_step, validation_result, reason="model_call_failed")
+            return fallback_response(current_step, validation_result, reason=FALLBACK_REASON_MODEL_CALL_FAILED)
 
         resolved = resolve_response_policy(policy_input, parsed)
         if resolved.used_fallback:

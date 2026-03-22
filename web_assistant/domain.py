@@ -86,6 +86,8 @@ def validate_name(value: str) -> tuple[bool, str]:
     phone, email = parse_contact(normalized)
     if phone or email:
         return False, "name_looks_like_contact"
+    if _looks_like_request_text(normalized):
+        return False, "name_looks_like_request"
     if len(normalized) < 2:
         return False, "name_too_short"
     if not NAME_RE.fullmatch(normalized):

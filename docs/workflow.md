@@ -74,7 +74,7 @@ The main difference is the transport layer:
    - Invalid values keep the user on the same step.
 2. `contact`
    - Input is parsed into `phone` or `telegram_username`.
-   - If the message does not contain a valid contact but the Telegram profile has a username, that username can be used as fallback.
+   - Profile username is not silently committed as a fallback contact; the bot asks for an explicit contact value.
 3. `request`
    - Input must describe the user's task.
    - Contact-like input is rejected.

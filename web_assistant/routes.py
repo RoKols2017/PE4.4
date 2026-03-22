@@ -135,7 +135,9 @@ def _apply_request_candidate(state, candidate: str | None, fallback_text: str | 
 def _advance_or_retry(*, state, ai, user_message: str, policy_response: StructuredAIResponse, session_id: str) -> tuple[str, bool]:  # noqa: ANN001
     order = ("name", "contact", "request")
     start_index = STEP_INDEX.get(state.step, 0)
-    for field in order[start_index:]:
+    process_all_fields = policy_response.detected_intent == "mixed_input"
+    fields_to_process = order[start_index:] if process_all_fields else (state.step,)
+    for field in fields_to_process:
         fallback_text = user_message if state.step == field else None
         if field == "name":
             ok, code = _apply_name_candidate(state, policy_response.candidate_fields.name, fallback_text)

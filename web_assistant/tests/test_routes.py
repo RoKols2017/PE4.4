@@ -147,6 +147,57 @@ def test_confirm_step_allows_partial_contact_edit() -> None:
     assert lead_repo.saved
 
 
+def test_name_edit_does_not_autofill_contact_and_request() -> None:
+    client, _lead_repo = create_test_client()
+    sid = "sid-edit-name"
+
+    client.post("/api/chat/start", headers={"X-Session-Id": sid})
+    client.post("/api/chat/message", json={"message": "Иван"}, headers={"X-Session-Id": sid})
+    client.post("/api/chat/message", json={"message": "ivan@example.com"}, headers={"X-Session-Id": sid})
+    client.post("/api/chat/message", json={"message": "Нужен сайт"}, headers={"X-Session-Id": sid})
+
+    edit = client.post("/api/chat/message", json={"message": "исправь имя"}, headers={"X-Session-Id": sid})
+    assert edit.status_code == 200
+    assert edit.get_json()["step"] == "name"
+
+    response = client.post(
+        "/api/chat/message",
+        json={"message": "Константин Хутькин, почта hut@gamil.com, нужен телеграм бот"},
+        headers={"X-Session-Id": sid},
+    )
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["step"] == "name"
+    assert "name_looks_like_request" in payload["assistant_message"]
+
+    clean_name = client.post(
+        "/api/chat/message",
+        json={"message": "Константин Хутькин"},
+        headers={"X-Session-Id": sid},
+    )
+    assert clean_name.status_code == 200
+    payload = clean_name.get_json()
+    assert payload["step"] == "confirm"
+    assert "Константин Хутькин" in payload["assistant_message"]
+
+
+def test_name_step_rejects_request_like_phrase() -> None:
+    client, _lead_repo = create_test_client()
+    sid = "sid-name-request-like"
+
+    client.post("/api/chat/start", headers={"X-Session-Id": sid})
+    response = client.post(
+        "/api/chat/message",
+        json={"message": "Хочу заказать телеграм бота"},
+        headers={"X-Session-Id": sid},
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["step"] == "name"
+    assert "name_looks_like_request" in payload["assistant_message"]
+
+
 def test_mixed_input_can_fill_whole_flow_until_confirm() -> None:
     client, _lead_repo = create_test_client()
     sid = "sid-mixed-input"

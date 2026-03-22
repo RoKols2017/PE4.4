@@ -29,6 +29,12 @@ def test_validate_contact_detects_request_text() -> None:
     assert code == "contact_looks_like_text"
 
 
+def test_validate_name_rejects_request_like_text() -> None:
+    ok, code = validate_name("Хочу заказать лендинг")
+    assert ok is False
+    assert code == "name_looks_like_request"
+
+
 def test_validate_request_short() -> None:
     ok, code = validate_request("abc")
     assert ok is False

@@ -16,6 +16,16 @@ ALLOWED_INTENTS = (
     "unknown",
 )
 
+FALLBACK_REASON_MODEL_CALL_FAILED = "model_call_failed"
+FALLBACK_REASON_INTENT_NOT_ALLOWED = "intent_not_allowed"
+
+STEP_BASE_MESSAGES = {
+    "name": "Подскажите, как к вам обращаться?",
+    "contact": "Оставьте, пожалуйста, контакт.",
+    "request": "Коротко опишите задачу.",
+    "confirm": "Проверьте данные и подтвердите отправку или выберите поле для правки.",
+}
+
 EXPECTED_TOP_LEVEL_KEYS = {
     "detected_intent",
     "candidate_fields",
@@ -27,6 +37,7 @@ VALIDATION_EXPLANATIONS = {
     "name_required": "Нужно только имя, без лишних пояснений.",
     "name_too_short": "Имя получилось слишком коротким.",
     "name_looks_like_contact": "Это похоже на контакт, а здесь нужно имя.",
+    "name_looks_like_request": "Это похоже на описание задачи, а здесь нужно имя.",
     "name_invalid_chars": "В имени есть лишние символы.",
     "contact_required": "Нужен контакт, чтобы мы могли связаться.",
     "contact_looks_like_text": "Это похоже на описание задачи, а здесь нужен контакт.",
@@ -80,14 +91,7 @@ def allowed_intents_for_step(step: str) -> tuple[str, ...]:
 
 def deterministic_message(step: str, validation_result: str = "") -> str:
     reason = VALIDATION_EXPLANATIONS.get(validation_result, "")
-    if step == "name":
-        base = "Подскажите, как к вам обращаться?"
-    elif step == "contact":
-        base = "Оставьте, пожалуйста, контакт."
-    elif step == "request":
-        base = "Коротко опишите задачу."
-    else:
-        base = "Проверьте данные и подтвердите отправку или выберите поле для правки."
+    base = STEP_BASE_MESSAGES.get(step, STEP_BASE_MESSAGES["confirm"])
 
     example = RETRY_EXAMPLES.get(step, "")
     parts = [base]
@@ -110,6 +114,10 @@ def fallback_response(step: str, validation_result: str = "", reason: str = "") 
         used_fallback=True,
         fallback_reason=reason,
     )
+
+
+def build_invalid_intent_reason(intent: str) -> str:
+    return f"{FALLBACK_REASON_INTENT_NOT_ALLOWED}:{intent}"
 
 
 def build_system_prompt(contact_label: str) -> str:
@@ -201,7 +209,7 @@ def resolve_response_policy(policy_input: ResponsePolicyInput, response: Structu
         return fallback_response(
             policy_input.current_step,
             policy_input.validation_result,
-            reason=f"intent_not_allowed:{response.detected_intent}",
+            reason=build_invalid_intent_reason(response.detected_intent),
         )
     return response
 

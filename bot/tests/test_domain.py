@@ -11,6 +11,12 @@ def test_normalize_name_strips_intro_phrase() -> None:
     assert normalize_name("я Вовочка") == "Вовочка"
 
 
+def test_validate_name_rejects_request_like_text() -> None:
+    ok, code = validate_name("Хочу заказать телеграм бота")
+    assert ok is False
+    assert code == "name_looks_like_request"
+
+
 def test_parse_contact_phone() -> None:
     phone, tg = parse_contact("+7 999 123 45 67")
     assert phone == "+79991234567"
