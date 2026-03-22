@@ -112,12 +112,9 @@ def _apply_contact_candidate(
     session: Session,
     candidate: str | None,
     fallback_text: str | None,
-    source_username: str,
 ) -> tuple[bool, str]:
     raw_value = candidate or fallback_text or ""
     phone, telegram_username = parse_contact(raw_value)
-    if not phone and not telegram_username and source_username:
-        telegram_username = source_username
     ok, code = validate_contact(phone, telegram_username, raw_text=raw_value)
     if not ok:
         return False, code
@@ -169,12 +166,14 @@ def _advance_or_retry(
 ) -> tuple[str, bool]:
     order = ("name", "contact", "request")
     start_index = STEP_INDEX.get(session.step, 0)
-    for field in order[start_index:]:
+    process_all_fields = policy_response.detected_intent == "mixed_input"
+    fields_to_process = order[start_index:] if process_all_fields else (session.step,)
+    for field in fields_to_process:
         fallback_text = user_text if session.step == field else None
         if field == "name":
             ok, code = _apply_name_candidate(session, policy_response.candidate_fields.name, fallback_text)
         elif field == "contact":
-            ok, code = _apply_contact_candidate(session, policy_response.candidate_fields.contact, fallback_text, source_username)
+            ok, code = _apply_contact_candidate(session, policy_response.candidate_fields.contact, fallback_text)
         else:
             ok, code = _apply_request_candidate(session, policy_response.candidate_fields.request, fallback_text)
 
