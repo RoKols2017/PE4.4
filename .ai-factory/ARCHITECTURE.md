@@ -20,4 +20,11 @@ Observability
 Shared domain
 - Единая библиотека в коде (валидации/нормализация/контракт репозитория) используется и ботом и сайтом (чтобы не разъехались правила).
 
+Runtime conversation boundary
+- FSM и deterministic resolver управляют step transitions, draft mutation и persistence.
+- `gpt-4o-mini` работает только через узкий JSON-контракт (`detected_intent`, `candidate_fields`, `needs_clarification`, `user_facing_message`).
+- Candidate-поля от модели считаются hint'ами и проходят field-by-field validation before commit.
+- При конфликте модели и валидатора источником истины остается валидатор.
+- Если ответ модели пустой, битый или с недопустимым intent, используется deterministic fallback.
+
 ai-factory хорошо работает, когда архитектурные развилки (A/B) решены до /aif-plan full.

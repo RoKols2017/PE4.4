@@ -14,7 +14,10 @@ class SessionState:
     updated_at: float = field(default_factory=time.time)
     offscript_count: int = 0
     qa_flags: list[str] = field(default_factory=list)
-    qa_flags: list[str] = field(default_factory=list)
+    last_user_message: str = ""
+    last_validation_result: str = ""
+    confirm_edit_target: str = ""
+    accepted_candidate_fields: list[str] = field(default_factory=list)
 
 
 class SessionStore:

@@ -40,6 +40,7 @@ docker compose --profile test run --rm web-assistant-test
 
 - `bot/tests/` covers domain validation and normalization behavior.
 - `web_assistant/tests/` covers domain validation, route behavior, leads auth, and leads page rendering.
+- Runtime-policy tests cover JSON schema parsing, invalid intent handling, and deterministic fallback resolution.
 - Docker test services install `pytest` from each service's `requirements.txt`.
 
 ## Manual Smoke Checks
@@ -52,6 +53,8 @@ After `docker compose up --build -d`:
 - Verify `/leads` rejects requests without token.
 - Verify `/api/leads?source=website_assistant` returns saved records with valid token.
 - In Telegram, use `/start`, submit a lead, then retry with `/new`.
+- In both channels, verify confirm-stage edits work (`исправь имя`, `исправь контакт`, `исправь задачу`).
+- Verify malformed or empty model output still produces a deterministic retry prompt and does not skip validation.
 
 ## Troubleshooting
 

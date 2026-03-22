@@ -1,4 +1,4 @@
-[← Architecture](architecture.md) · [Back to README](../README.md) · [Configuration →](configuration.md)
+[← Workflow](workflow.md) · [Back to README](../README.md) · [Configuration →](configuration.md)
 
 # API
 
@@ -71,10 +71,12 @@ Body:
 Behavior:
 
 - Empty message returns `400` with `{"error": "message_required"}`
-- Valid input advances the flow to the next step
-- Invalid input keeps the current step and returns retry guidance
-- Final `да` saves the lead and returns a confirmation with generated `lead_id`
-- Final `нет` resets the flow back to `name`
+- Valid input advances the flow to the next missing field or to confirm
+- Mixed input may fill more than one field in one request, but only after deterministic backend validation
+- Invalid input keeps the current step and returns retry guidance with deterministic fallback when model output is unusable
+- At confirm, `да` saves the lead and returns a confirmation with generated `lead_id`
+- At confirm, `нет` resets the flow back to `name`
+- At confirm, phrases like `исправь имя`, `исправь контакт`, or `исправь задачу` return only to the requested field
 
 ### `GET /leads`
 
@@ -133,5 +135,6 @@ Response:
 ## See Also
 
 - [Architecture](architecture.md) - service boundaries and flow ownership
+- [Workflow](workflow.md) - step-by-step lead collection flow
 - [Configuration](configuration.md) - auth and env requirements
 - [Testing](testing.md) - endpoint verification in Docker

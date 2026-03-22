@@ -42,6 +42,7 @@ docker compose --profile test run --rm web-assistant-test
 
 - `bot/tests/` покрывает валидацию и нормализацию доменной модели.
 - `web_assistant/tests/` покрывает доменную валидацию, поведение маршрутов, авторизацию на просмотр лидов и рендеринг страницы заявок.
+- Тесты runtime policy покрывают разбор JSON-схемы, невалидные intent'ы и deterministic fallback.
 - Docker test-сервисы устанавливают `pytest` из `requirements.txt` каждого сервиса.
 
 ## Ручные smoke checks
@@ -54,6 +55,8 @@ docker compose --profile test run --rm web-assistant-test
 - Проверьте, что `/leads` отклоняет запросы без токена.
 - Проверьте, что `/api/leads?source=website_assistant` возвращает сохраненные записи при валидном токене.
 - В Telegram используйте `/start`, отправьте лид и затем повторите с `/new`.
+- В обоих каналах проверьте confirm-stage edits (`исправь имя`, `исправь контакт`, `исправь задачу`).
+- Проверьте, что пустой или битый ответ модели не пропускает валидацию и приводит к deterministic retry prompt.
 
 ## Устранение неполадок
 

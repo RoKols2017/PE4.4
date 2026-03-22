@@ -4,41 +4,21 @@ import logging
 
 from openai import OpenAI
 
+from runtime_policy import (
+    ResponsePolicyInput,
+    StructuredAIResponse,
+    build_system_prompt,
+    build_user_prompt,
+    fallback_response,
+    parse_structured_response,
+    resolve_response_policy,
+    response_to_dict,
+)
+
 
 LOGGER = logging.getLogger(__name__)
 
-
-SYSTEM_PROMPT = (
-    "Ты ассистент сайта для приема заявок на digital-услуги. "
-    "Стиль: вежливый, деловой, краткий, 1-2 предложения. "
-    "Не уходи в продажи, не выдумывай данные и не подменяй поля. "
-    "Сценарий: имя -> контакт (телефон или email) -> суть запроса -> подтверждение. "
-    "Если пользователь отклоняется от сценария, мягко верни к текущему шагу. "
-    "Если имя введено как фраза ('я Вовочка', 'меня зовут Анна'), попроси ввести только имя. "
-    "Если вместо контакта пришел текст запроса, попроси именно контакт. "
-    "Если вместо запроса пришел контакт, попроси коротко описать задачу."
-)
-
-STEP_HINTS = {
-    "name": "Запроси только имя пользователя.",
-    "contact": "Запроси только один контакт: телефон или email.",
-    "request": "Запроси краткую суть запроса пользователя.",
-    "confirm": "Попроси подтвердить отправку словом 'да' или начать заново словом 'нет'.",
-}
-
-VALIDATION_HINTS = {
-    "name_required": "Пользователь не ввел имя.",
-    "name_too_short": "Имя слишком короткое.",
-    "name_looks_like_contact": "Вместо имени пользователь прислал контакт.",
-    "name_invalid_chars": "Имя содержит лишние символы.",
-    "contact_required": "Контакт не распознан.",
-    "contact_looks_like_text": "Пользователь прислал текст запроса вместо контакта.",
-    "phone_invalid": "Телефон невалиден.",
-    "email_invalid": "Email невалиден.",
-    "request_too_short": "Запрос слишком короткий.",
-    "request_looks_like_contact": "Пользователь прислал контакт вместо описания запроса.",
-    "confirm_expected": "Ожидается подтверждение 'да' или 'нет'.",
-}
+CONTACT_LABEL = "phone or email"
 
 
 class AssistantAI:
@@ -46,45 +26,88 @@ class AssistantAI:
         self._client = OpenAI(api_key=api_key)
         self._model = model
 
-    def reply(self, step: str, draft: dict, user_text: str, validation_hint: str) -> str:
+    def respond(
+        self,
+        *,
+        current_step: str,
+        known_fields: dict,
+        validation_result: str,
+        offscript_count: int,
+        last_user_message: str,
+        correlation_id: str,
+    ) -> StructuredAIResponse:
+        policy_input = ResponsePolicyInput(
+            current_step=current_step,
+            known_fields=known_fields,
+            validation_result=validation_result,
+            offscript_count=offscript_count,
+            last_user_message=last_user_message,
+        )
         try:
-            step_hint = STEP_HINTS.get(step, "Верни пользователя к текущему шагу.")
-            hint_text = VALIDATION_HINTS.get(validation_hint, validation_hint or "")
+            system_prompt = build_system_prompt(CONTACT_LABEL)
+            user_prompt = build_user_prompt(policy_input, CONTACT_LABEL)
             LOGGER.debug(
-                "[web_assistant.ai] Generating response",
-                extra={"step": step, "validation_hint": validation_hint},
+                "[web_assistant.ai] Sending structured prompt",
+                extra={
+                    "step": current_step,
+                    "validation_result": validation_result or "none",
+                    "session_id": correlation_id,
+                    "allowed_contact_format": CONTACT_LABEL,
+                },
             )
             response = self._client.responses.create(
                 model=self._model,
                 input=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {
-                        "role": "user",
-                        "content": (
-                            f"Current step: {step}\n"
-                            f"Step hint: {step_hint}\n"
-                            f"Draft: {draft}\n"
-                            f"User: {user_text}\n"
-                            f"Validation hint: {hint_text}\n"
-                            "Ответь одной репликой ассистента на русском языке."
-                        ),
-                    },
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
                 ],
             )
-            LOGGER.info("[web_assistant.ai] Model response success", extra={"step": step})
-            text = response.output_text.strip()
-            return text or self.fallback(step)
+            parsed = parse_structured_response(response.output_text)
+            LOGGER.info(
+                "[web_assistant.ai] Structured response parsed",
+                extra={
+                    "step": current_step,
+                    "session_id": correlation_id,
+                    "intent": parsed.detected_intent,
+                    "used_fallback": parsed.used_fallback,
+                },
+            )
         except Exception as error:  # noqa: BLE001
-            LOGGER.error("[web_assistant.ai] Model call failed: %s", error)
-            LOGGER.warning("[web_assistant.ai] Fallback activated", extra={"step": step})
-            return self.fallback(step)
+            LOGGER.error(
+                "[web_assistant.ai] Structured model call failed: %s",
+                error,
+                extra={"step": current_step, "session_id": correlation_id},
+            )
+            return fallback_response(current_step, validation_result, reason="model_call_failed")
 
-    @staticmethod
-    def fallback(step: str) -> str:
-        if step == "name":
-            return "Подскажите, пожалуйста, как вас зовут?"
-        if step == "contact":
-            return "Оставьте контакт: телефон (+79991234567) или email (example@domain.com)."
-        if step == "request":
-            return "Кратко опишите, пожалуйста, ваш запрос."
-        return "Подтвердите отправку заявки: напишите 'да' или 'нет'."
+        resolved = resolve_response_policy(policy_input, parsed)
+        if resolved.used_fallback:
+            LOGGER.warning(
+                "[web_assistant.ai] Deterministic fallback activated",
+                extra={
+                    "step": current_step,
+                    "session_id": correlation_id,
+                    "fallback_reason": resolved.fallback_reason,
+                },
+            )
+        else:
+            LOGGER.debug(
+                "[web_assistant.ai] Structured policy resolved",
+                extra={
+                    "step": current_step,
+                    "session_id": correlation_id,
+                    "policy": response_to_dict(resolved),
+                },
+            )
+        return resolved
+
+    def reply(self, step: str, draft: dict, user_text: str, validation_hint: str) -> str:
+        response = self.respond(
+            current_step=step,
+            known_fields=draft,
+            validation_result=validation_hint,
+            offscript_count=0,
+            last_user_message=user_text,
+            correlation_id="unknown",
+        )
+        return response.user_facing_message

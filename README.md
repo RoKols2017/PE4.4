@@ -33,6 +33,7 @@ docker compose --profile test run --rm web-assistant-test
 - **Protected leads viewer** / **Защищенная страница заявок** по адресу `/leads`
 - **Leads API** / **API заявок** на `/api/leads` с токеном, пагинацией и фильтром `source`
 - **AI recovery replies** / **AI-ответы для recovery flow** через OpenAI API без выдумывания данных
+- **Structured response policy** / **Структурированный response_policy** с JSON-контрактом для `gpt-4o-mini`
 - **Deterministic validation guards** / **Детерминированные проверки** для `name/contact/request`
 - **Shared PostgreSQL persistence** / **Общее хранилище PostgreSQL** в `leads` и `lead_events`
 - **Docker-first deployment with Caddy** / **Docker-first развертывание с Caddy и HTTPS**
@@ -62,6 +63,7 @@ Leads UI access / Доступ к UI заявок: `/leads?token=<LEADS_VIEW_TOK
 |-------|-------------|
 | [Getting Started](docs/getting-started.md) | Setup flow and first AI Factory steps |
 | [Architecture](docs/architecture.md) | Service boundaries and data flow |
+| [Workflow](docs/workflow.md) | Lead capture flow for web and Telegram |
 | [API](docs/api.md) | Web assistant HTTP endpoints |
 | [Configuration](docs/configuration.md) | Environment variables and secrets policy |
 | [Deployment](docs/deployment.md) | Docker and Caddy deployment baseline |
@@ -74,6 +76,7 @@ Leads UI access / Доступ к UI заявок: `/leads?token=<LEADS_VIEW_TOK
 |--------|----------|
 | [Быстрый старт](docs/ru/getting-started.md) | Сценарий запуска и первые шаги |
 | [Архитектура](docs/ru/architecture.md) | Границы сервисов и поток данных |
+| [Workflow](docs/ru/workflow.md) | Flow сбора заявок на сайте и в Telegram |
 | [API](docs/ru/api.md) | HTTP endpoint'ы веб-ассистента |
 | [Конфигурация](docs/ru/configuration.md) | Переменные окружения и политика секретов |
 | [Развертывание](docs/ru/deployment.md) | Docker и Caddy для production |

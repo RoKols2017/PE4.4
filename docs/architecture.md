@@ -1,4 +1,4 @@
-[← Getting Started](getting-started.md) · [Back to README](../README.md) · [API →](api.md)
+[← Getting Started](getting-started.md) · [Back to README](../README.md) · [Workflow →](workflow.md)
 
 # Architecture
 
@@ -53,8 +53,16 @@ Website assistant collects `phone` or `email` and stores both as first-class col
 - `telegram-bot`: `/start` or `/new` resets the in-memory session and starts the collection flow.
 - `web-assistant`: `POST /api/chat/start` issues `session_id` and begins the same four-step flow.
 - Validation happens before save on every step: `name`, `contact`, `request`, `confirm`.
-- Wrong-field inputs stay on the same step and get a retry prompt plus AI-generated recovery text.
+- A narrow `response_policy` layer sits above the FSM: the model may return structured intent, candidate fields, and a short user-facing message, but it never owns transitions, validation, or persistence.
+- Wrong-field inputs stay on the same step and get a retry prompt resolved by backend validators plus deterministic fallback copy.
 - Final confirmation persists the lead and resets the session state.
+
+## Runtime AI Boundary
+
+- Runtime model output is constrained to a small JSON contract.
+- Backend validators remain the source of truth for `name`, `contact`, and `request`.
+- Candidate fields extracted by the model are treated as hints only and are checked field-by-field before draft mutation.
+- Deterministic resolver code decides partial accepts, retries, confirm edits, and save/no-save outcomes.
 
 ## TLS Strategy
 
@@ -67,5 +75,6 @@ TLS is managed by Caddy directly:
 ## See Also
 
 - [Getting Started](getting-started.md) - first-session workflow
+- [Workflow](workflow.md) - lead capture flow and improvement ideas
 - [API](api.md) - route surface and response shapes
 - [Configuration](configuration.md) - env vars and secrets

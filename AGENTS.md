@@ -49,6 +49,7 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 |- docs/
 |  |- getting-started.md       # Setup flow and first steps
 |  |- architecture.md          # Service boundaries and data flow
+|  |- workflow.md              # Lead capture workflow and improvements
 |  |- api.md                   # Web assistant HTTP endpoints
 |  |- configuration.md         # Env vars and secret policy
 |  |- deployment.md            # Docker/Caddy deployment baseline
@@ -86,6 +87,7 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 | README | `README.md` | Project landing page |
 | Getting Started | `docs/getting-started.md` | Setup flow and first steps |
 | Architecture | `docs/architecture.md` | Service boundaries and data flow |
+| Workflow | `docs/workflow.md` | Lead capture flow and improvements |
 | API | `docs/api.md` | Web assistant HTTP endpoints |
 | Configuration | `docs/configuration.md` | Env vars and secret policy |
 | Deployment | `docs/deployment.md` | Docker and Caddy baseline |
@@ -93,6 +95,7 @@ The repository includes a Python Telegram bot in `bot/` and a Flask website assi
 | Testing | `docs/testing.md` | Docker test workflow |
 | Getting Started (RU) | `docs/ru/getting-started.md` | Русский сценарий запуска |
 | Architecture (RU) | `docs/ru/architecture.md` | Русская архитектура сервиса |
+| Workflow (RU) | `docs/ru/workflow.md` | Русский flow заявок и улучшения |
 | API (RU) | `docs/ru/api.md` | Русское описание HTTP API |
 | Configuration (RU) | `docs/ru/configuration.md` | Русские env и секреты |
 | Deployment (RU) | `docs/ru/deployment.md` | Русское руководство по deploy |
